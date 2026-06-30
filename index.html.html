@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kai's Learning Land</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Noto Sans KR", sans-serif;
+    background: #FFF8EE;
+    color: #3C2A1E;
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+
+  .hero {
+    text-align: center;
+    padding: 32px 0 28px;
+  }
+  .hero-icon { font-size: 52px; display: block; margin-bottom: 10px; }
+  .hero h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #C2410C;
+    margin-bottom: 6px;
+  }
+  .hero p {
+    font-size: 15px;
+    color: #92744F;
+    line-height: 1.6;
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #B08A5F;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin: 28px 0 12px 2px;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: #FFFFFF;
+    border-radius: 18px;
+    padding: 20px;
+    text-decoration: none;
+    color: inherit;
+    border: 2px solid transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 3px 12px rgba(180,120,40,0.09);
+    transition: transform .15s, border-color .15s, box-shadow .15s;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: #FFB454;
+    box-shadow: 0 6px 20px rgba(180,120,40,0.15);
+  }
+  .card:active { transform: scale(0.98); }
+
+  .card-icon { font-size: 34px; }
+  .card-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #C2410C;
+  }
+  .card-sub {
+    font-size: 13px;
+    color: #92744F;
+    line-height: 1.5;
+  }
+  .card-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin-top: 4px;
+    width: fit-content;
+  }
+  .tag-voice { background: #EDE9F9; color: #5B3DBE; }
+  .tag-game  { background: #DCFCE7; color: #166534; }
+  .tag-math  { background: #FFF3CD; color: #92744F; }
+
+  .card-arrow {
+    margin-top: auto;
+    font-size: 20px;
+    color: #FFB454;
+    align-self: flex-end;
+  }
+
+  .add-card {
+    background: #FFF8EE;
+    border: 2px dashed #F3D9B1;
+    border-radius: 18px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 140px;
+    color: #C4A882;
+  }
+  .add-card-icon { font-size: 28px; }
+  .add-card-text { font-size: 13px; font-weight: 700; }
+
+  .footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 12px;
+    color: #C4A882;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <span class="hero-icon">🌟</span>
+    <h1>Kai's Learning Land</h1>
+    <p>Choose an activity and let's learn together!</p>
+  </div>
+
+  <div class="section-label">Activities</div>
+  <div class="card-grid">
+
+    <!-- Card 1: Speech Worksheet -->
+    <a class="card" href="./plus_minus_playground_for_kai.html">
+      <div class="card-icon">🎙️</div>
+      <div class="card-title">말하기 산술 워크시트</div>
+      <div class="card-sub">덧셈과 뺄셈 문제를 영어로 말하며 풀어요.<br>9단계 × 2문항 = 18문항</div>
+      <span class="card-tag tag-voice">🎤 Voice</span>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- Card 2: Division Playground -->
+    <a class="card" href="./divide_playground_for_kai.html">
+      <div class="card-icon">🍬</div>
+      <div class="card-title">Division Playground</div>
+      <div class="card-sub">사탕을 나눠주며 나누기 개념을 배워요.<br>Subtraction &amp; Multiplication 연결도 탐험!</div>
+      <span class="card-tag tag-game">🎮 Game</span>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- Placeholder for future content -->
+    <div class="add-card">
+      <div class="add-card-icon">＋</div>
+      <div class="add-card-text">Coming soon</div>
+    </div>
+
+  </div>
+
+  <div class="footer">Kai's Learning Land · sjkang7982.github.io</div>
+</div>
+</body>
+</html>
