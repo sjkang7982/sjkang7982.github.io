@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kai's Land: Division Playground</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,"Noto Sans KR",sans-serif; background:#FFF8EE; color:#3C2A1E; padding:16px; }
+  .wrap { max-width:640px; margin:0 auto; }
+  h1 { text-align:center; font-size:26px; margin:8px 0 6px; color:#C2410C; }
+  .voice-bar { display:flex; align-items:center; gap:10px; background:#FFFFFF; border-radius:14px; padding:10px 14px; margin-bottom:8px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+  .mic-error { background:#FBE3E3; border-radius:12px; padding:10px 14px; margin-bottom:12px; font-size:13px; color:#C62828; line-height:1.7; display:none; }
+  .mic-error b { color:#8B0000; }
+  .text-cmd-row { display:flex; gap:8px; margin-bottom:12px; align-items:center; }
+  .text-cmd-input {
+    flex:1; padding:10px 14px; border-radius:12px; border:2px solid #E4DEF7;
+    font-size:15px; font-family:inherit; color:#3C2A1E;
+    background:#F4F2FB;
+  }
+  .text-cmd-input:focus { outline:none; border-color:#7C5CE0; }
+  .text-cmd-btn {
+    padding:10px 16px; border-radius:12px; border:none; background:#7C5CE0;
+    color:#fff; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  .text-cmd-btn:hover { background:#5B3DBE; }
+  .mic-dot { width:14px; height:14px; border-radius:50%; background:#CCC; flex-shrink:0; transition:background .3s; }
+  .mic-dot.on  { background:#4CAF8A; animation:blink 1.2s infinite; }
+  .mic-dot.heard{ background:#FF8A3D; animation:none; }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .voice-text { font-size:13px; color:#92744F; flex:1; min-width:0; }
+  .voice-heard{ font-size:13px; font-weight:700; color:#5B3DBE; }
+  .mic-toggle { font-size:20px; background:none; border:none; cursor:pointer; padding:4px; border-radius:8px; }
+  .mic-toggle:hover { background:#F3D9B1; }
+  .hint-card { background:#F4F2FB; border-radius:14px; padding:12px 14px; margin-bottom:12px; font-size:12px; color:#5B3DBE; line-height:1.8; display:none; }
+  .hint-card b { color:#3C2A1E; }
+  .hint-toggle { font-size:12px; background:none; border:none; cursor:pointer; color:#8478AC; text-decoration:underline; padding:0; font-family:inherit; display:block; text-align:center; margin-bottom:14px; }
+  .section-label { font-size:13px; font-weight:700; color:#92744F; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .tag { font-size:11px; background:#5B3DBE; color:#fff; border-radius:6px; padding:1px 6px; }
+  .picker-row { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+  .pick { padding:10px 16px; border-radius:12px; border:2px solid #F3D9B1; background:#FFFFFF; font-size:14px; font-weight:700; cursor:pointer; color:#92744F; transition:all .2s; }
+  .pick.active { background:#4CAF8A; border-color:#4CAF8A; color:#fff; }
+  .pick.flash  { background:#FFB454; border-color:#FFB454; color:#fff; }
+  .n-input-wrap { display:flex; align-items:center; gap:6px; }
+  .n-label { font-size:14px; font-weight:700; color:#92744F; }
+  input[type=number] { width:60px; padding:8px; border-radius:10px; border:2px solid #F3D9B1; font-size:15px; font-weight:700; color:#3C2A1E; text-align:center; font-family:inherit; }
+  input[type=number]:focus { outline:none; border-color:#4CAF8A; }
+  input[type=number].flash { border-color:#FFB454; background:#FFF6DC; }
+  .pile-section { background:#FFFFFF; border-radius:18px; padding:16px 18px; margin-bottom:14px; box-shadow:0 3px 10px rgba(180,120,40,.08); }
+  .pile-label { font-size:13px; color:#92744F; font-weight:700; margin-bottom:6px; }
+  #pile { font-size:26px; min-height:38px; line-height:1.5; word-break:break-all; }
+  .friends-section { background:#FFFFFF; border-radius:18px; padding:16px; margin-bottom:14px; box-shadow:0 3px 10px rgba(180,120,40,.08); }
+  .friends-grid { display:grid; gap:14px; }
+  .friend { background:#FFF1DD; border-radius:14px; padding:12px 8px; text-align:center; border:3px solid transparent; transition:border-color .2s; }
+  .friend.turn { border-color:#FFB454; }
+  .friend .emoji { font-size:26px; }
+  .friend .fname { font-size:13px; color:#92744F; margin:4px 0 6px; font-weight:700; }
+  .friend .candies { font-size:26px; min-height:32px; letter-spacing:2px; word-break:break-all; line-height:1.4; }
+  .friend .fcount { font-size:12px; color:#B08A5F; margin-top:4px; }
+  .leftover-box { margin-top:12px; background:#FBE3E3; border-radius:12px; padding:10px; text-align:center; font-size:14px; font-weight:700; color:#C62828; }
+  .btn-row { display:flex; justify-content:center; gap:10px; margin:14px 0 8px; flex-wrap:wrap; }
+  button { font-family:inherit; font-size:15px; font-weight:700; padding:12px 20px; border-radius:14px; border:none; cursor:pointer; transition:transform .1s; }
+  button:active { transform:scale(.96); }
+  .btn-primary  { background:#FF8A3D; color:#fff; }
+  .btn-secondary{ background:#FFF1DD; color:#92744F; }
+  .btn-relation { background:#5B3DBE; color:#fff; }
+  button:disabled { opacity:.4; cursor:default; }
+  button.flash { box-shadow:0 0 0 3px #FFB454; }
+  #message { text-align:center; font-size:22px; font-weight:700; min-height:32px; color:#C2410C; margin-top:4px; line-height:1.4; }
+  .relation-panel { background:#FFFFFF; border-radius:18px; padding:18px; margin-top:16px; box-shadow:0 3px 10px rgba(91,61,190,.10); display:none; }
+  .relation-panel.open { display:block; }
+  .relation-title { text-align:center; font-size:15px; font-weight:700; color:#5B3DBE; margin-bottom:14px; }
+  .relation-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .rel-box { background:#F4F2FB; border-radius:14px; padding:14px 12px; }
+  .rel-box-title { font-size:13px; font-weight:700; margin-bottom:10px; text-align:center; }
+  .rel-box.sub .rel-box-title { color:#C2410C; }
+  .rel-box.mul .rel-box-title { color:#2E7D32; }
+  .rel-row { font-size:16px; font-weight:700; padding:6px 10px; border-radius:10px; margin-bottom:6px; text-align:center; }
+  .rel-row.sub-step { background:#FBE3E3; color:#C62828; }
+  .rel-row.sub-zero { background:#DFF3E7; color:#2E7D32; }
+  .rel-row.mul-step { background:#E8F5E9; color:#1B5E20; }
+  .rel-arrow { text-align:center; font-size:18px; color:#B0A0CC; margin:4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🍬 Kai's Land: Division Playground</h1>
+
+  <div class="voice-bar">
+    <div class="mic-dot" id="micDot"></div>
+    <div style="flex:1;min-width:0;">
+      <div class="voice-text" id="voiceStatus">Tap 🎤 to turn on voice</div>
+      <div class="voice-heard" id="voiceHeard"></div>
+    </div>
+    <button class="mic-toggle" id="micToggle">🎤</button>
+  </div>
+
+  <!-- Mic error guidance -->
+  <div class="mic-error" id="micError">
+    <b>🚫 Microphone is blocked.</b><br>
+    To fix: click the 🔒 lock icon in your browser's address bar → set Microphone to <b>Allow</b> → refresh the page.<br>
+    Or use Chrome and open via <b>https://</b> (not file://).
+  </div>
+
+  <!-- Text command fallback: always visible, works even without mic -->
+  <div class="text-cmd-row">
+    <input class="text-cmd-input" id="textCmd" type="text" placeholder='Type a command: "six", "two", "give", "again", "show"…' />
+    <button class="text-cmd-btn" id="textCmdBtn">→</button>
+  </div>
+
+  <div class="hint-card" id="hintCard">
+    <b>🗣️ Voice commands (say these!):</b><br>
+    <b>"six"</b> / <b>"twelve"</b> / any number 1–18 → set candies<br>
+    <b>"two"</b> / <b>"three"</b> → set friends<br>
+    <b>"give"</b> → give one candy each<br>
+    <b>"again"</b> → start over<br>
+    <b>"show"</b> → open subtraction &amp; multiplication<br>
+    <b>"hide"</b> → close it
+  </div>
+  <button class="hint-toggle" id="hintToggle">Show voice commands ▾</button>
+
+  <div class="section-label">How many candies? <span class="tag">🎤 say a number</span></div>
+  <div class="picker-row">
+    <div class="pick" id="pick6">6</div>
+    <div class="pick" id="pick12">12</div>
+    <div class="n-input-wrap">
+      <span class="n-label">n =</span>
+      <input type="number" id="nInput" min="1" max="18" value="18"/>
+      <div class="pick" id="pickN">Go!</div>
+    </div>
+  </div>
+
+  <div class="section-label">How many friends? <span class="tag">🎤 "two" / "three"</span></div>
+  <div class="picker-row">
+    <div class="pick" id="pickF2">2 friends</div>
+    <div class="pick" id="pickF3">3 friends</div>
+  </div>
+
+  <div class="pile-section">
+    <div class="pile-label">Candies left</div>
+    <div id="pile"></div>
+  </div>
+
+  <div class="friends-section">
+    <div class="friends-grid" id="friendsGrid"></div>
+    <div class="leftover-box" id="leftoverBox" style="display:none;"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-primary" id="giveBtn">Give one candy each 🍬<br><small style="font-weight:400;opacity:.8;">say "give"</small></button>
+    <button class="btn-secondary" id="resetBtn">Start over 🔄<br><small style="font-weight:400;opacity:.8;">say "again"</small></button>
+  </div>
+  <div id="message"></div>
+
+  <div class="btn-row" style="margin-top:20px;">
+    <button class="btn-relation" id="relBtn">🔗 Subtraction &amp; Multiplication<br><small style="font-weight:400;opacity:.8;">say "show" / "hide"</small></button>
+  </div>
+
+  <div class="relation-panel" id="relPanel">
+    <div class="relation-title" id="relTitle"></div>
+    <div class="relation-grid">
+      <div class="rel-box sub">
+        <div class="rel-box-title">➖ Subtraction</div>
+        <div id="subSteps"></div>
+      </div>
+      <div class="rel-box mul">
+        <div class="rel-box-title">✖️ Multiplication</div>
+        <div id="mulSteps"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let TOTAL=6, FRIENDS=2, remaining=6, given=[], turn=0, finished=false, relOpen=false, voiceOn=false;
+
+  const $ = id => document.getElementById(id);
+  const pileEl=$('pile'), giveBtn=$('giveBtn'), resetBtn=$('resetBtn'), messageEl=$('message');
+  const friendsGrid=$('friendsGrid'), leftoverBox=$('leftoverBox'), nInput=$('nInput');
+  const relBtn=$('relBtn'), relPanel=$('relPanel'), relTitle=$('relTitle');
+  const subSteps=$('subSteps'), mulSteps=$('mulSteps');
+  const micDot=$('micDot'), voiceStatus=$('voiceStatus'), voiceHeard=$('voiceHeard'), micToggle=$('micToggle');
+  const hintCard=$('hintCard'), hintToggle=$('hintToggle');
+
+  // Hint toggle
+  const micError=$('micError'), textCmd=$('textCmd'), textCmdBtn=$('textCmdBtn');
+
+  // Text command fallback
+  function runTextCmd(){
+    const val=textCmd.value.trim();
+    if(!val)return;
+    const ok=dispatch(val);
+    voiceHeard.textContent='"'+val+'"'+(ok?' ✅':' ❓');
+    voiceStatus.textContent='Typed:';
+    textCmd.value='';
+    setTimeout(()=>{ voiceStatus.textContent=voiceOn?'Listening…':'Tap 🎤 to turn on voice'; voiceHeard.textContent=''; },1800);
+  }
+  textCmdBtn.addEventListener('click',runTextCmd);
+  textCmd.addEventListener('keydown',e=>{ if(e.key==='Enter')runTextCmd(); });
+
+  hintToggle.addEventListener('click',()=>{
+    const open=hintCard.style.display==='block';
+    hintCard.style.display=open?'none':'block';
+    hintToggle.textContent=open?'Show voice commands ▾':'Hide voice commands ▴';
+  });
+
+  // Number words
+  const NW={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,
+    eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,
+    won:1,to:2,too:2,for:4,fore:4,ate:8,thre:3};
+
+  function parseNum(text){
+    const t=text.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+    const dm=t.match(/\b(1[0-8]|[1-9])\b/); if(dm) return parseInt(dm[1],10);
+    const keys=Object.keys(NW).sort((a,b)=>b.length-a.length);
+    for(const k of keys) if(new RegExp('\\b'+k+'\\b').test(t)) return NW[k];
+    return null;
+  }
+
+  function flash(el){if(!el)return; el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),700);}
+
+  function dispatch(text){
+    const t=text.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+    if(/\b(give|next)\b/.test(t)){ flash(giveBtn); giveOne(); return true; }
+    if(/\b(again|reset|restart)\b/.test(t)){ flash(resetBtn); setMode(TOTAL,FRIENDS); return true; }
+    if(/\bshow\b/.test(t)&&!relOpen){ flash(relBtn); toggleRel(); return true; }
+    if(/\bhide\b/.test(t)&&relOpen){ flash(relBtn); toggleRel(); return true; }
+    if(/\btwo\b/.test(t)||t==='2'){ flash($('pickF2')); setMode(TOTAL,2); return true; }
+    if(/\bthree\b/.test(t)||t==='3'){ flash($('pickF3')); setMode(TOTAL,3); return true; }
+    const n=parseNum(t);
+    if(n!==null&&n>=1&&n<=18){
+      if(n===6){ flash($('pick6')); setMode(6,FRIENDS); }
+      else if(n===12){ flash($('pick12')); setMode(12,FRIENDS); }
+      else { nInput.value=n; flash(nInput); setMode(n,FRIENDS); }
+      return true;
+    }
+    return false;
+  }
+
+  // Speech recognition — continuous loop
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  let rec=null, recRunning=false;
+
+  function startRec(){
+    if(!SR||!voiceOn||recRunning) return;
+    rec=new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=3;
+    rec.onstart=()=>{ recRunning=true; micError.style.display='none'; };
+    rec.onresult=e=>{
+      const tx=e.results[e.results.length-1][0].transcript;
+      const ok=dispatch(tx);
+      micDot.classList.remove('on'); micDot.classList.add('heard');
+      voiceHeard.textContent='"'+tx+'"'+(ok?' ✅':' ❓');
+      voiceStatus.textContent='Heard:';
+      setTimeout(()=>{ micDot.classList.remove('heard'); if(voiceOn)micDot.classList.add('on'); voiceStatus.textContent='Listening…'; voiceHeard.textContent=''; },1800);
+    };
+    rec.onerror=e=>{ recRunning=false;
+      if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+        voiceStatus.textContent='🚫 Mic blocked — see instructions below';
+        micError.style.display='block';
+        voiceOn=false; micDot.classList.remove('on');
+      } else if(e.error==='no-speech'){
+        // silence is fine — just restart
+      } else if(e.error==='network'){
+        voiceStatus.textContent='📶 Network error. Check connection.';
+      }
+    };
+    rec.onend=()=>{ recRunning=false; if(voiceOn) setTimeout(startRec,200); };
+    try{ rec.start(); }catch(e){ recRunning=false; }
+  }
+
+  micToggle.addEventListener('click',()=>{
+    if(!SR){ voiceStatus.textContent='⚠️ Not supported. Use Chrome.'; return; }
+    // file:// protocol never gets mic permission — warn immediately instead of trying
+    if(location.protocol==='file:'){
+      micError.style.display='block';
+      micError.innerHTML=
+        '<b>🚫 Voice does not work when opened as a local file.</b><br>'+
+        'Please open this page via <b>https://</b> (e.g. GitHub Pages).<br>'+
+        '→ Upload to <b>sjkang7982.github.io</b> and open that URL in Chrome.<br>'+
+        'Until then, use the <b>text command box</b> above — it works the same way!';
+      voiceStatus.textContent='🚫 Local file — mic unavailable';
+      return;
+    }
+    voiceOn=!voiceOn;
+    micDot.classList.toggle('on',voiceOn);
+    voiceStatus.textContent=voiceOn?'Listening…':'Tap 🎤 to turn on voice';
+    if(voiceOn) startRec();
+    else{ if(rec)try{rec.abort();}catch(e){} recRunning=false; voiceHeard.textContent=''; }
+  });
+
+  // Game logic
+  function buildCards(){
+    friendsGrid.style.gridTemplateColumns='repeat('+FRIENDS+',1fr)';
+    friendsGrid.innerHTML='';
+    for(let i=0;i<FRIENDS;i++){
+      const c=document.createElement('div'); c.className='friend';
+      c.innerHTML='<div class="emoji">🙂</div><div class="fname">Friend '+(i+1)+'</div><div class="candies"></div><div class="fcount">0</div>';
+      friendsGrid.appendChild(c);
+    }
+  }
+
+  function render(){
+    pileEl.textContent=remaining>0?'🍬 '.repeat(remaining).trim():'None';
+    document.querySelectorAll('.friend').forEach((el,i)=>{
+      el.querySelector('.candies').textContent='🍬'.repeat(given[i]);
+      el.querySelector('.fcount').textContent=given[i]+(given[i]===1?' candy':' candies');
+      el.classList.toggle('turn',!finished&&remaining>0&&i===turn);
+    });
+    const per=Math.floor(TOTAL/FRIENDS), left=TOTAL%FRIENDS;
+    if(finished){
+      leftoverBox.style.display=left>0?'block':'none';
+      if(left>0){
+        leftoverBox.textContent='😅 '+left+(left===1?' candy':' candies')+' left over!  '+TOTAL+' ÷ '+FRIENDS+' = '+per+' remainder '+left;
+        messageEl.textContent=TOTAL+' ÷ '+FRIENDS+' = '+per+' remainder '+left;
+      } else {
+        messageEl.textContent='🎉 '+TOTAL+' ÷ '+FRIENDS+' = '+per+' — each friend gets '+per+(per===1?' candy!':' candies!');
+      }
+      giveBtn.disabled=true;
+    } else {
+      messageEl.textContent=remaining>0?'Give a candy to Friend '+(turn+1)+'!':'';
+      giveBtn.disabled=remaining<=0; leftoverBox.style.display='none';
+    }
+    if(relOpen) renderRel();
+  }
+
+  function giveOne(){
+    if(remaining<=0){finished=true;render();return;}
+    given[turn]++; remaining--;
+    turn=(turn+1)%FRIENDS;
+    if(remaining===0)finished=true;
+    render();
+  }
+
+  function setMode(c,f){
+    TOTAL=Math.min(Math.max(1,c),18); FRIENDS=f;
+    remaining=TOTAL; given=new Array(f).fill(0); turn=0; finished=false;
+    buildCards(); render();
+    $('pick6').classList.toggle('active',TOTAL===6);
+    $('pick12').classList.toggle('active',TOTAL===12);
+    $('pickN').classList.toggle('active',TOTAL!==6&&TOTAL!==12);
+    $('pickF2').classList.toggle('active',FRIENDS===2);
+    $('pickF3').classList.toggle('active',FRIENDS===3);
+  }
+
+  function renderRel(){
+    const per=Math.floor(TOTAL/FRIENDS), left=TOTAL%FRIENDS;
+    relTitle.textContent=TOTAL+' ÷ '+FRIENDS+' = '+per+(left>0?' remainder '+left:'');
+    let sub='', val=TOTAL, count=0;
+    while(val>=FRIENDS){
+      const next=val-FRIENDS; const zero=next===0;
+      sub+='<div class="rel-row '+(zero?'sub-zero':'sub-step')+'">'+val+' − '+FRIENDS+' = '+next+'</div>';
+      if(!zero)sub+='<div class="rel-arrow">↓</div>';
+      val=next; count++;
+    }
+    if(left>0)sub+='<div class="rel-row sub-step">'+val+' (remainder)</div>';
+    sub+='<div class="rel-row sub-zero" style="margin-top:8px;">→ subtracted '+count+' times = '+per+'</div>';
+    subSteps.innerHTML=sub;
+    let mul='';
+    if(left===0){
+      mul='<div class="rel-row mul-step">'+per+' × '+FRIENDS+' = '+TOTAL+'</div>'+
+          '<div class="rel-arrow">↕</div>'+
+          '<div class="rel-row mul-step">'+FRIENDS+' × '+per+' = '+TOTAL+'</div>';
+    } else {
+      mul='<div class="rel-row mul-step">'+per+' × '+FRIENDS+' = '+(per*FRIENDS)+'</div>'+
+          '<div class="rel-arrow">+</div>'+
+          '<div class="rel-row sub-step">+ '+left+' (remainder)</div>'+
+          '<div class="rel-arrow">=</div>'+
+          '<div class="rel-row mul-step">= '+TOTAL+'</div>';
+    }
+    mulSteps.innerHTML=mul;
+  }
+
+  function toggleRel(){
+    relOpen=!relOpen; relPanel.classList.toggle('open',relOpen);
+    relBtn.innerHTML=(relOpen?'🔗 Hide Subtraction &amp; Multiplication':'🔗 Subtraction &amp; Multiplication')+
+      '<br><small style="font-weight:400;opacity:.8;">say "'+(relOpen?'hide':'show')+'"</small>';
+    if(relOpen)renderRel();
+  }
+
+  $('pick6').addEventListener('click',()=>setMode(6,FRIENDS));
+  $('pick12').addEventListener('click',()=>setMode(12,FRIENDS));
+  $('pickN').addEventListener('click',()=>{
+    const v=parseInt(nInput.value,10);
+    if(!isNaN(v)&&v>=1&&v<=18)setMode(v,FRIENDS);
+    else{nInput.style.borderColor='#E53935';setTimeout(()=>nInput.style.borderColor='',600);}
+  });
+  nInput.addEventListener('keydown',e=>{ if(e.key==='Enter')$('pickN').click(); });
+  $('pickF2').addEventListener('click',()=>setMode(TOTAL,2));
+  $('pickF3').addEventListener('click',()=>setMode(TOTAL,3));
+  giveBtn.addEventListener('click',giveOne);
+  resetBtn.addEventListener('click',()=>setMode(TOTAL,FRIENDS));
+  relBtn.addEventListener('click',toggleRel);
+
+  setMode(6,2);
+</script>
+</body>
+</html>
