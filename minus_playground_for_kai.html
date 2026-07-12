@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kai's Land: Minus Playground</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Noto Sans KR", sans-serif;
+    background: #F0F7FF;
+    color: #1A2A3A;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 26px; margin: 8px 0 6px; color: #1040A0; }
+
+  /* ── Voice bar ── */
+  .voice-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: #FFFFFF; border-radius: 14px; padding: 10px 14px;
+    margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,64,.07);
+  }
+  .mic-dot { width: 14px; height: 14px; border-radius: 50%; background: #CCC; flex-shrink: 0; transition: background .3s; }
+  .mic-dot.on   { background: #4CAF8A; animation: blink 1.2s infinite; }
+  .mic-dot.heard{ background: #FF8A3D; animation: none; }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .voice-text  { font-size: 13px; color: #6B7A8A; flex: 1; min-width: 0; }
+  .voice-heard { font-size: 13px; font-weight: 700; color: #1040A0; }
+  .mic-toggle  { font-size: 20px; background: none; border: none; cursor: pointer; padding: 4px; border-radius: 8px; }
+  .mic-toggle:hover { background: #E0ECF8; }
+
+  .mic-error { background: #FBE3E3; border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; color: #C62828; line-height: 1.7; display: none; }
+  .mic-error b { color: #8B0000; }
+
+  .text-cmd-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .text-cmd-input {
+    flex: 1; padding: 10px 14px; border-radius: 12px;
+    border: 2px solid #C8DCF0; font-size: 15px; font-family: inherit;
+    color: #1A2A3A; background: #EAF3FF;
+  }
+  .text-cmd-input:focus { outline: none; border-color: #1040A0; }
+  .text-cmd-btn {
+    padding: 10px 16px; border-radius: 12px; border: none;
+    background: #1040A0; color: #fff; font-size: 15px;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+
+  .hint-card { background: #E8F0FE; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; font-size: 12px; color: #1040A0; line-height: 1.8; display: none; }
+  .hint-card b { color: #0A2050; }
+  .hint-toggle { font-size: 12px; background: none; border: none; cursor: pointer; color: #5070B0; text-decoration: underline; padding: 0; font-family: inherit; display: block; text-align: center; margin-bottom: 14px; }
+
+  /* ── Pickers ── */
+  .section-label { font-size: 18px; font-weight: 700; color: #4060A0; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .tag { font-size: 11px; background: #1040A0; color: #fff; border-radius: 6px; padding: 1px 6px; }
+  .picker-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .pick {
+    padding: 9px 15px; border-radius: 12px; border: 2px solid #C8DCF0;
+    background: #FFFFFF; font-size: 14px; font-weight: 700;
+    cursor: pointer; color: #4060A0; transition: all .2s;
+  }
+  .pick.active { background: #1040A0; border-color: #1040A0; color: #fff; }
+  .pick.flash  { background: #FFB454; border-color: #FFB454; color: #fff; }
+  .pick:disabled, .pick.disabled { opacity: .4; cursor: default; }
+
+  /* ── Block display area ── */
+  .blocks-section {
+    background: #FFFFFF; border-radius: 18px; padding: 18px;
+    margin-bottom: 14px; box-shadow: 0 3px 12px rgba(0,40,100,.08);
+    min-height: 120px;
+  }
+  .blocks-label { font-size: 18px; color: #4060A0; font-weight: 700; margin-bottom: 10px; }
+  .blocks-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+
+  /* Each block */
+  .block {
+    display: flex; flex-direction: column; align-items: center;
+    border-radius: 10px; font-size: 13px; font-weight: 700;
+    transition: all .35s; position: relative;
+  }
+  .block-body {
+    width: 46px; height: 46px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 900; border: 3px solid transparent;
+    transition: all .35s;
+  }
+  .block-num { font-size: 11px; margin-top: 4px; font-weight: 700; }
+
+  /* block states */
+  .block.kept   .block-body { opacity: 1; transform: scale(1); }
+
+  /* X-marked block: stays visible but crossed out */
+  .block.gone .block-body {
+    opacity: 0.35;
+    background: #CCCCCC !important;
+    border-color: #999 !important;
+    color: #999 !important;
+    transform: scale(1);
+    position: relative;
+  }
+  .block.gone .block-num { color: #AAA; }
+
+  /* X overlay */
+  .block.gone .block-body::after {
+    content: '✕';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 22px;
+    font-weight: 900;
+    color: #E53935;
+    pointer-events: none;
+  }
+
+  /* flash animation when first marked */
+  .block.marking .block-body {
+    animation: markpulse .35s ease;
+  }
+  @keyframes markpulse {
+    0%  { transform: scale(1); }
+    40% { transform: scale(1.2); box-shadow: 0 0 0 4px rgba(229,57,53,.35); }
+    100%{ transform: scale(1); }
+  }
+
+  /* Numberblocks color palette */
+  .nb1 { background:#E53935; border-color:#B71C1C; color:white; }
+  .nb2 { background:#FB8C00; border-color:#E65100; color:white; }
+  .nb3 { background:#FDD835; border-color:#F9A825; color:#7F5F00; }
+  .nb4 { background:#43A047; border-color:#1B5E20; color:white; }
+  .nb5 { background:#2979D8; border-color:#1040A0; color:white; }
+  .nb6 { background:#B39DDB; border-color:#7E57C2; color:white; }
+  .nb7 { background:#7B1FA2; border-color:#4A148C; color:white; }
+  .nb8 { background:#EC407A; border-color:#880E4F; color:white; }
+  .nb9 { background:#9E9E9E; border-color:#424242; color:white; }
+  .nb10{ background:white;   border-color:#E53935; color:#B71C1C; }
+  .nb11{ background:white;   border-color:#E53935; color:#B71C1C; }
+  .nb12{ background:white;   border-color:#E53935; color:#B71C1C; }
+
+  /* ── Equation display ── */
+  .eq-section {
+    background: #FFFFFF; border-radius: 18px; padding: 16px 20px;
+    margin-bottom: 14px; box-shadow: 0 3px 12px rgba(0,40,100,.08);
+    text-align: center;
+  }
+  .eq-text { font-size: 30px; font-weight: 900; letter-spacing: 2px; color: #1040A0; }
+  .eq-text .given  { color: #E53935; }
+  .eq-text .result { color: #2E7D32; }
+  .eq-text .blank  { color: #E53935; }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; justify-content: center; gap: 10px; margin: 10px 0 6px; flex-wrap: wrap; }
+  button {
+    font-family: inherit; font-size: 15px; font-weight: 700; padding: 12px 20px;
+    border-radius: 14px; border: none; cursor: pointer; transition: transform .1s;
+  }
+  button:active { transform: scale(.96); }
+  .btn-primary   { background: #1040A0; color: #fff; }
+  .btn-secondary { background: #E0ECF8; color: #1040A0; }
+  .btn-relation  { background: #1B5E20; color: #fff; }
+  button:disabled { opacity: .4; cursor: default; }
+  button.flash { box-shadow: 0 0 0 3px #FFB454; }
+
+  #message { text-align: center; font-size: 22px; font-weight: 700; min-height: 32px; color: #1040A0; margin-top: 4px; line-height: 1.4; }
+
+  /* ── Relation panel ── */
+  .relation-panel {
+    background: #FFFFFF; border-radius: 18px; padding: 18px;
+    margin-top: 14px; box-shadow: 0 3px 12px rgba(0,64,0,.08); display: none;
+  }
+  .relation-panel.open { display: block; }
+  .relation-title { text-align: center; font-size: 15px; font-weight: 700; color: #1B5E20; margin-bottom: 14px; }
+  .relation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .rel-box { background: #F1F8E9; border-radius: 14px; padding: 14px 12px; }
+  .rel-box-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; text-align: center; color: #1B5E20; }
+  .rel-row { font-size: 15px; font-weight: 700; padding: 6px 10px; border-radius: 10px; margin-bottom: 6px; text-align: center; }
+  .rel-row.add-step { background: #DCEEFB; color: #1040A0; }
+  .rel-row.count-step { background: #FFF3E0; color: #E65100; }
+  .rel-row.result-row { background: #C8E6C9; color: #1B5E20; }
+  .rel-arrow { text-align: center; font-size: 18px; color: #A0B0C0; margin: 4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧱 Kai's Land: Minus Playground</h1>
+
+  <!-- Voice bar -->
+  <div class="voice-bar">
+    <div class="mic-dot" id="micDot"></div>
+    <div style="flex:1;min-width:0;">
+      <div class="voice-text" id="voiceStatus">Tap 🎤 to turn on voice</div>
+      <div class="voice-heard" id="voiceHeard"></div>
+    </div>
+    <button class="mic-toggle" id="micToggle">🎤</button>
+  </div>
+
+  <div class="mic-error" id="micError">
+    <b>🚫 Voice does not work when opened as a local file.</b><br>
+    Open via <b>https://sjkang7982.github.io</b> in Chrome to use the microphone.<br>
+    For now, use the <b>text command box</b> below — it works the same way!
+  </div>
+
+  <div class="text-cmd-row">
+    <input class="text-cmd-input" id="textCmd" type="text"
+      placeholder='Say or type: "five", "give", "give three", "again", "show"…'/>
+    <button class="text-cmd-btn" id="textCmdBtn">→</button>
+  </div>
+
+  <div class="hint-card" id="hintCard">
+    <b>🗣️ Voice / text commands:</b><br>
+    <b>"five"</b> (any number 3–12) → set starting blocks<br>
+    <b>"give"</b> or <b>"minus"</b> → give away one block<br>
+    <b>"give three"</b> → give away 3 blocks at once<br>
+    <b>"again"</b> → start over<br>
+    <b>"show"</b> / <b>"hide"</b> → open / close addition &amp; count-back panel
+  </div>
+  <button class="hint-toggle" id="hintToggle">Show voice commands ▾</button>
+
+  <!-- Picker: how many blocks Kai has -->
+  <div class="section-label">How many blocks do you have? <span class="tag">🎤 say a number</span></div>
+  <div class="picker-row" id="startPicker"></div>
+
+  <!-- Block display -->
+  <div class="blocks-section">
+    <div class="blocks-label" id="blocksLabel">Your blocks</div>
+    <div class="blocks-row" id="blocksRow"></div>
+  </div>
+
+  <!-- Live equation -->
+  <div class="eq-section">
+    <div class="eq-text" id="eqText"></div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="btn-row">
+    <button class="btn-primary" id="giveBtn">
+      Give away one block 🧱<br>
+      <small style="font-weight:400;opacity:.8;">say "give"</small>
+    </button>
+    <button class="btn-secondary" id="resetBtn">
+      Start over 🔄<br>
+      <small style="font-weight:400;opacity:.8;">say "again"</small>
+    </button>
+  </div>
+  <div id="message"></div>
+
+  <!-- Relation toggle -->
+  <div class="btn-row" style="margin-top:18px;">
+    <button class="btn-relation" id="relBtn">
+      ➕ Addition &amp; Count Back<br>
+      <small style="font-weight:400;opacity:.8;">say "show" / "hide"</small>
+    </button>
+  </div>
+
+  <!-- Relation panel -->
+  <div class="relation-panel" id="relPanel">
+    <div class="relation-title" id="relTitle"></div>
+    <div class="relation-grid">
+      <div class="rel-box">
+        <div class="rel-box-title">➕ Addition (reverse)</div>
+        <div id="addSteps"></div>
+      </div>
+      <div class="rel-box">
+        <div class="rel-box-title">🔢 Count Back</div>
+        <div id="countSteps"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ══ State ══
+  let TOTAL = 5, given = 0, relOpen = false, voiceOn = false, animating = false;
+
+  // ══ DOM ══
+  const $ = id => document.getElementById(id);
+  const micDot=$('micDot'), voiceStatus=$('voiceStatus'), voiceHeard=$('voiceHeard'), micToggle=$('micToggle');
+  const micError=$('micError'), textCmd=$('textCmd'), textCmdBtn=$('textCmdBtn');
+  const hintCard=$('hintCard'), hintToggle=$('hintToggle');
+  const startPicker=$('startPicker'), blocksRow=$('blocksRow'), blocksLabel=$('blocksLabel');
+  const eqText=$('eqText'), giveBtn=$('giveBtn'), resetBtn=$('resetBtn'), messageEl=$('message');
+  const relBtn=$('relBtn'), relPanel=$('relPanel'), relTitle=$('relTitle');
+  const addSteps=$('addSteps'), countSteps=$('countSteps');
+
+  // ══ Numberblocks colors ══
+  const NB_COLORS = ['','nb1','nb2','nb3','nb4','nb5','nb6','nb7','nb8','nb9','nb10','nb11','nb12'];
+
+  // ══ Build start picker (3–12) ══
+  for (let i = 3; i <= 12; i++) {
+    const d = document.createElement('div');
+    d.className = 'pick'; d.textContent = i; d.dataset.v = i;
+    d.addEventListener('click', () => setTotal(i));
+    startPicker.appendChild(d);
+  }
+
+  // ══ Build blocks ══
+  function buildBlocks() {
+    blocksRow.innerHTML = '';
+    for (let i = 1; i <= TOTAL; i++) {
+      const wrap = document.createElement('div');
+      wrap.className = 'block kept'; wrap.id = 'blk' + i;
+      const body = document.createElement('div');
+      body.className = 'block-body ' + NB_COLORS[i <= 12 ? i : 12];
+      body.textContent = i;
+      const num = document.createElement('div');
+      num.className = 'block-num'; num.textContent = '#' + i;
+      wrap.appendChild(body); wrap.appendChild(num);
+      blocksRow.appendChild(wrap);
+    }
+  }
+
+  function updateBlocks() {
+    for (let i = 1; i <= TOTAL; i++) {
+      const blk = $('blk' + i);
+      if (!blk) continue;
+      if (i <= TOTAL - given) {
+        blk.className = 'block kept';
+        // re-apply Numberblocks color for kept blocks
+        blk.querySelector('.block-body').className = 'block-body ' + NB_COLORS[i <= 12 ? i : 12];
+      } else {
+        blk.className = 'block gone';
+      }
+    }
+  }
+
+  function renderEq() {
+    const remaining = TOTAL - given;
+    let html = '<span>' + TOTAL + '</span>';
+    if (given > 0) {
+      html += ' − <span class="given">' + given + '</span>';
+    }
+    if (given > 0) {
+      html += ' = <span class="result">' + remaining + '</span>';
+    } else {
+      html += ' − <span class="blank">?</span>';
+    }
+    eqText.innerHTML = html;
+  }
+
+  function renderMessage() {
+    const remaining = TOTAL - given;
+    if (given === 0) {
+      messageEl.textContent = 'Give away a block!';
+    } else if (remaining === 0) {
+      messageEl.textContent = '🎉 ' + TOTAL + ' − ' + given + ' = 0 — all given away!';
+      giveBtn.disabled = true;
+    } else {
+      messageEl.textContent = TOTAL + ' − ' + given + ' = ' + remaining + ' blocks left!';
+      giveBtn.disabled = false;
+    }
+    blocksLabel.textContent = 'Your blocks (' + remaining + ' left)';
+  }
+
+  function render() {
+    updateBlocks();
+    renderEq();
+    renderMessage();
+    // picker highlight
+    startPicker.querySelectorAll('.pick').forEach(p =>
+      p.classList.toggle('active', parseInt(p.dataset.v) === TOTAL));
+    if (relOpen) renderRelation();
+  }
+
+  function setTotal(n) {
+    TOTAL = Math.max(3, Math.min(12, n));
+    given = 0;
+    giveBtn.disabled = false;
+    buildBlocks();
+    render();
+    // flash picker
+    startPicker.querySelectorAll('.pick').forEach(p => {
+      if (parseInt(p.dataset.v) === TOTAL) { flashEl(p); }
+    });
+  }
+
+  // ══ Give away one block (X-mark animation) ══
+  function giveOne(count = 1) {
+    if (animating) return;
+    const remaining = TOTAL - given;
+    const toRemove = Math.min(count, remaining);
+    if (toRemove <= 0) return;
+    animating = true;
+    giveBtn.disabled = true;
+
+    let removed = 0;
+    function markNext() {
+      if (removed >= toRemove) {
+        animating = false;
+        render();
+        return;
+      }
+      given++;
+      removed++;
+      // mark the rightmost kept block (highest index among kept)
+      const blkIdx = TOTAL - given + 1;
+      const blk = $('blk' + blkIdx);
+      if (blk) {
+        blk.classList.add('marking');
+        setTimeout(() => {
+          blk.classList.remove('marking');
+          blk.classList.remove('kept');
+          blk.classList.add('gone');
+          renderEq();
+          renderMessage();
+          setTimeout(markNext, 150);
+        }, 350);
+      } else {
+        setTimeout(markNext, 100);
+      }
+    }
+    markNext();
+  }
+
+  function resetGame() {
+    given = 0;
+    giveBtn.disabled = false;
+    buildBlocks();
+    render();
+  }
+
+  // ══ Relation panel ══
+  function renderRelation() {
+    const remaining = TOTAL - given;
+    relTitle.textContent = TOTAL + ' − ' + given + ' = ' + remaining;
+
+    // Addition reverse: remaining + given = TOTAL
+    addSteps.innerHTML =
+      '<div class="rel-row add-step">' + remaining + ' + ' + given + ' = ' + TOTAL + '</div>' +
+      '<div class="rel-arrow">↕</div>' +
+      '<div class="rel-row add-step">' + given + ' + ' + remaining + ' = ' + TOTAL + '</div>' +
+      '<div class="rel-arrow" style="margin-top:8px;font-size:13px;color:#4060A0;">Addition is the reverse of subtraction!</div>';
+
+    // Count back from TOTAL
+    let cb = '';
+    const steps = Math.min(given, 6); // show max 6 steps to avoid overflow
+    for (let i = 0; i < steps; i++) {
+      const from = TOTAL - i;
+      const to   = TOTAL - i - 1;
+      cb += '<div class="rel-row count-step">' + from + ' → ' + to + '</div>';
+      if (i < steps - 1) cb += '<div class="rel-arrow">↓</div>';
+    }
+    if (given > 6) cb += '<div class="rel-arrow">… (' + (given - 6) + ' more steps)</div>';
+    cb += '<div class="rel-row result-row" style="margin-top:8px;">= ' + remaining + ' ✅</div>';
+    countSteps.innerHTML = cb;
+  }
+
+  function toggleRelation() {
+    relOpen = !relOpen;
+    relPanel.classList.toggle('open', relOpen);
+    relBtn.innerHTML = (relOpen ? '➕ Hide Addition &amp; Count Back' : '➕ Addition &amp; Count Back') +
+      '<br><small style="font-weight:400;opacity:.8;">say "' + (relOpen ? 'hide' : 'show') + '"</small>';
+    if (relOpen) renderRelation();
+  }
+
+  // ══ Number words ══
+  const NW = {
+    zero:0, one:1, two:2, three:3, four:4, five:5, six:6,
+    seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12,
+    won:1, to:2, too:2, for:4, fore:4, ate:8, thre:3
+  };
+  function parseNum(text) {
+    const t = text.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+    const dm = t.match(/\b(1[0-2]|[1-9])\b/); if (dm) return parseInt(dm[1],10);
+    const keys = Object.keys(NW).sort((a,b) => b.length - a.length);
+    for (const k of keys) if (new RegExp('\\b'+k+'\\b').test(t)) return NW[k];
+    return null;
+  }
+
+  function flashEl(el) {
+    if (!el) return;
+    el.classList.add('flash');
+    setTimeout(() => el.classList.remove('flash'), 700);
+  }
+
+  // ══ Command dispatcher ══
+  function dispatch(text) {
+    const t = text.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+
+    // give / minus [N]
+    if (/\b(give|minus|take|remove)\b/.test(t)) {
+      const n = parseNum(t.replace(/give|minus|take|remove/g,'').trim()) || 1;
+      flashEl(giveBtn); giveOne(n); return true;
+    }
+    // again / reset
+    if (/\b(again|reset|restart)\b/.test(t)) { flashEl(resetBtn); resetGame(); return true; }
+    // show / hide
+    if (/\bshow\b/.test(t) && !relOpen) { flashEl(relBtn); toggleRelation(); return true; }
+    if (/\bhide\b/.test(t) && relOpen)  { flashEl(relBtn); toggleRelation(); return true; }
+    // number → set total
+    const n = parseNum(t);
+    if (n !== null && n >= 3 && n <= 12) {
+      setTotal(n); return true;
+    }
+    return false;
+  }
+
+  // ══ Text command ══
+  function runTextCmd() {
+    const val = textCmd.value.trim(); if (!val) return;
+    const ok = dispatch(val);
+    voiceHeard.textContent = '"' + val + '"' + (ok ? ' ✅' : ' ❓');
+    voiceStatus.textContent = 'Typed:';
+    textCmd.value = '';
+    setTimeout(() => { voiceStatus.textContent = voiceOn ? 'Listening…' : 'Tap 🎤 to turn on voice'; voiceHeard.textContent = ''; }, 1800);
+  }
+  textCmdBtn.addEventListener('click', runTextCmd);
+  textCmd.addEventListener('keydown', e => { if (e.key === 'Enter') runTextCmd(); });
+
+  // ══ Hint toggle ══
+  hintToggle.addEventListener('click', () => {
+    const open = hintCard.style.display === 'block';
+    hintCard.style.display = open ? 'none' : 'block';
+    hintToggle.textContent = open ? 'Show voice commands ▾' : 'Hide voice commands ▴';
+  });
+
+  // ══ Speech recognition ══
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, recRunning = false;
+
+  function startRec() {
+    if (!SR || !voiceOn || recRunning) return;
+    rec = new SR(); rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 3;
+    rec.onstart = () => { recRunning = true; micError.style.display = 'none'; };
+    rec.onresult = e => {
+      const tx = e.results[e.results.length-1][0].transcript;
+      const ok = dispatch(tx);
+      micDot.classList.remove('on'); micDot.classList.add('heard');
+      voiceHeard.textContent = '"' + tx + '"' + (ok ? ' ✅' : ' ❓');
+      voiceStatus.textContent = 'Heard:';
+      setTimeout(() => {
+        micDot.classList.remove('heard');
+        if (voiceOn) micDot.classList.add('on');
+        voiceStatus.textContent = 'Listening…'; voiceHeard.textContent = '';
+      }, 1800);
+    };
+    rec.onerror = e => {
+      recRunning = false;
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        micError.style.display = 'block';
+        voiceStatus.textContent = '🚫 Mic blocked — see instructions above';
+        voiceOn = false; micDot.classList.remove('on');
+      }
+    };
+    rec.onend = () => { recRunning = false; if (voiceOn) setTimeout(startRec, 200); };
+    try { rec.start(); } catch(e) { recRunning = false; }
+  }
+
+  micToggle.addEventListener('click', () => {
+    if (!SR) { voiceStatus.textContent = '⚠️ Not supported. Use Chrome.'; return; }
+    if (location.protocol === 'file:') {
+      micError.style.display = 'block';
+      voiceStatus.textContent = '🚫 Local file — mic unavailable';
+      return;
+    }
+    voiceOn = !voiceOn;
+    micDot.classList.toggle('on', voiceOn);
+    voiceStatus.textContent = voiceOn ? 'Listening…' : 'Tap 🎤 to turn on voice';
+    if (voiceOn) startRec();
+    else { if (rec) try { rec.abort(); } catch(e){} recRunning = false; voiceHeard.textContent = ''; }
+  });
+
+  // ══ Button events ══
+  giveBtn.addEventListener('click', () => giveOne(1));
+  resetBtn.addEventListener('click', resetGame);
+  relBtn.addEventListener('click', toggleRelation);
+
+  // ══ Init ══
+  setTotal(5);
+</script>
+</body>
+</html>
