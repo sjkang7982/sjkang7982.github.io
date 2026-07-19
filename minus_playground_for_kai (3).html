@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kai's Land: Minus Playground</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system,"Noto Sans KR",sans-serif; background:#F0F7FF; color:#1A2A3A; min-height:100vh; padding:16px; }
+  .wrap { max-width:700px; margin:0 auto; }
+  h1 { text-align:center; font-size:26px; margin:8px 0 6px; color:#1040A0; }
+
+  /* Voice bar */
+  .voice-bar { display:flex; align-items:center; gap:10px; background:#fff; border-radius:14px; padding:10px 14px; margin-bottom:8px; box-shadow:0 2px 8px rgba(0,0,64,.07); }
+  .mic-dot { width:14px; height:14px; border-radius:50%; background:#CCC; flex-shrink:0; transition:background .3s; }
+  .mic-dot.on   { background:#4CAF8A; animation:blink 1.2s infinite; }
+  .mic-dot.heard{ background:#FF8A3D; animation:none; }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .voice-text  { font-size:13px; color:#6B7A8A; flex:1; min-width:0; }
+  .voice-heard { font-size:13px; font-weight:700; color:#1040A0; }
+  .mic-toggle  { font-size:20px; background:none; border:none; cursor:pointer; padding:4px; border-radius:8px; }
+  .mic-toggle:hover { background:#E0ECF8; }
+  .mic-error { background:#FBE3E3; border-radius:12px; padding:10px 14px; margin-bottom:8px; font-size:13px; color:#C62828; line-height:1.7; display:none; }
+  .mic-error b { color:#8B0000; }
+  .text-cmd-row { display:flex; gap:8px; margin-bottom:10px; }
+  .text-cmd-input { flex:1; padding:10px 14px; border-radius:12px; border:2px solid #C8DCF0; font-size:15px; font-family:inherit; color:#1A2A3A; background:#EAF3FF; }
+  .text-cmd-input:focus { outline:none; border-color:#1040A0; }
+  .text-cmd-btn { padding:10px 16px; border-radius:12px; border:none; background:#1040A0; color:#fff; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .hint-card { background:#E8F0FE; border-radius:14px; padding:12px 14px; margin-bottom:10px; font-size:12px; color:#1040A0; line-height:1.8; display:none; }
+  .hint-card b { color:#0A2050; }
+  .hint-toggle { font-size:12px; background:none; border:none; cursor:pointer; color:#5070B0; text-decoration:underline; padding:0; font-family:inherit; display:block; text-align:center; margin-bottom:14px; }
+
+  /* Pickers */
+  .section-label { font-size:18px; font-weight:700; color:#4060A0; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .tag { font-size:11px; background:#1040A0; color:#fff; border-radius:6px; padding:1px 6px; }
+  .picker-row { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .pick { padding:9px 15px; border-radius:12px; border:2px solid #C8DCF0; background:#fff; font-size:14px; font-weight:700; cursor:pointer; color:#4060A0; transition:all .2s; }
+  .pick.active { background:#1040A0; border-color:#1040A0; color:#fff; }
+  .pick.active2 { background:#E53935; border-color:#B71C1C; color:#fff; }
+  .pick.flash  { background:#FFB454; border-color:#FFB454; color:#fff; }
+
+  /* Stage indicator */
+  .stage-bar { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .stage-pill {
+    padding:6px 16px; border-radius:20px; font-size:13px; font-weight:700;
+    background:#E0ECF8; color:#4060A0; transition:all .3s;
+  }
+  .stage-pill.active1 { background:#1040A0; color:#fff; }
+  .stage-pill.active2 { background:#E53935; color:#fff; }
+  .stage-pill.done    { background:#C8DCF0; color:#6B7A8A; }
+  .stage-arrow { font-size:18px; color:#A0B4C8; }
+
+  /* Blocks */
+  .blocks-section { background:#fff; border-radius:18px; padding:18px; margin-bottom:14px; box-shadow:0 3px 12px rgba(0,40,100,.08); min-height:120px; }
+  .blocks-label { font-size:18px; color:#4060A0; font-weight:700; margin-bottom:10px; }
+  .blocks-row { display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; }
+  .block { display:flex; flex-direction:column; align-items:center; border-radius:10px; font-size:13px; font-weight:700; position:relative; }
+  .block-body { width:46px; height:46px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:900; border:3px solid transparent; transition:all .3s; position:relative; }
+  .block-num { font-size:11px; margin-top:4px; font-weight:700; }
+
+  /* kept */
+  .block.kept .block-body { opacity:1; transform:scale(1); }
+
+  /* step1 X — red */
+  .block.gone1 .block-body { opacity:0.3; background:#DDDDDD !important; border-color:#AAA !important; color:#AAA !important; }
+  .block.gone1 .block-body::after { content:'✕'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:22px; font-weight:900; color:#E53935; }
+  .block.gone1 .block-num { color:#E53935; font-weight:900; }
+
+  /* step2 X — blue */
+  .block.gone2 .block-body { opacity:0.3; background:#DDDDDD !important; border-color:#AAA !important; color:#AAA !important; }
+  .block.gone2 .block-body::after { content:'✕'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:22px; font-weight:900; color:#1040A0; }
+  .block.gone2 .block-num { color:#1040A0; font-weight:900; }
+
+  /* mark animation */
+  .block.marking .block-body { animation:markpulse .35s ease; }
+  @keyframes markpulse { 0%{transform:scale(1)} 40%{transform:scale(1.22);box-shadow:0 0 0 5px rgba(229,57,53,.3)} 100%{transform:scale(1)} }
+
+  /* Numberblocks colors */
+  .nb1{background:#E53935;border-color:#B71C1C;color:white}
+  .nb2{background:#FB8C00;border-color:#E65100;color:white}
+  .nb3{background:#FDD835;border-color:#F9A825;color:#7F5F00}
+  .nb4{background:#43A047;border-color:#1B5E20;color:white}
+  .nb5{background:#2979D8;border-color:#1040A0;color:white}
+  .nb6{background:#B39DDB;border-color:#7E57C2;color:white}
+  .nb7{background:#7B1FA2;border-color:#4A148C;color:white}
+  .nb8{background:#EC407A;border-color:#880E4F;color:white}
+  .nb9{background:#9E9E9E;border-color:#424242;color:white}
+  .nb10{background:white;border-color:#E53935;color:#B71C1C}
+  .nb11{background:white;border-color:#E53935;color:#B71C1C}
+  .nb12{background:white;border-color:#E53935;color:#B71C1C}
+
+  /* Legend */
+  .legend { display:flex; gap:14px; margin-bottom:10px; flex-wrap:wrap; }
+  .legend-item { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; }
+  .legend-dot { width:14px; height:14px; border-radius:4px; }
+  .legend-dot.l-kept  { background:#2979D8; }
+  .legend-dot.l-gone1 { background:#E53935; }
+  .legend-dot.l-gone2 { background:#1040A0; }
+
+  /* Equation */
+  .eq-section { background:#fff; border-radius:18px; padding:16px 20px; margin-bottom:14px; box-shadow:0 3px 12px rgba(0,40,100,.08); text-align:center; }
+  .eq-text { font-size:26px; font-weight:900; letter-spacing:2px; color:#1040A0; min-height:36px; }
+  .eq-s1 { color:#E53935; }
+  .eq-s2 { color:#1040A0; }
+  .eq-res { color:#2E7D32; }
+  .eq-arrow { color:#888; margin:0 6px; }
+
+  /* Buttons */
+  .btn-row { display:flex; justify-content:center; gap:10px; margin:10px 0 6px; flex-wrap:wrap; }
+  button { font-family:inherit; font-size:15px; font-weight:700; padding:12px 20px; border-radius:14px; border:none; cursor:pointer; transition:transform .1s; }
+  button:active { transform:scale(.96); }
+  .btn-s1       { background:#1040A0; color:#fff; }
+  .btn-s2       { background:#E53935; color:#fff; }
+  .btn-secondary{ background:#E0ECF8; color:#1040A0; }
+  .btn-relation { background:#1B5E20; color:#fff; }
+  button:disabled { opacity:.4; cursor:default; }
+  button.flash { box-shadow:0 0 0 3px #FFB454; }
+
+  #message { text-align:center; font-size:22px; font-weight:700; min-height:32px; color:#1040A0; margin-top:4px; line-height:1.4; }
+
+  /* Step2 picker section (hidden until step1 done) */
+  .step2-section { display:none; }
+  .step2-section.visible { display:block; }
+  .step2-divider { border:none; border-top:2px dashed #E53935; margin:16px 0; }
+
+  /* Relation panel */
+  .relation-panel { background:#fff; border-radius:18px; padding:18px; margin-top:14px; box-shadow:0 3px 12px rgba(0,64,0,.08); display:none; }
+  .relation-panel.open { display:block; }
+  .relation-title { text-align:center; font-size:15px; font-weight:700; color:#1B5E20; margin-bottom:14px; }
+  .relation-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .rel-box { background:#F1F8E9; border-radius:14px; padding:14px 12px; }
+  .rel-box-title { font-size:13px; font-weight:700; margin-bottom:10px; text-align:center; color:#1B5E20; }
+  .rel-row { font-size:14px; font-weight:700; padding:5px 8px; border-radius:10px; margin-bottom:5px; text-align:center; }
+  .rel-row.add-step   { background:#DCEEFB; color:#1040A0; }
+  .rel-row.count-step { background:#FFF3E0; color:#E65100; }
+  .rel-row.result-row { background:#C8E6C9; color:#1B5E20; }
+  .rel-arrow { text-align:center; font-size:16px; color:#A0B0C0; margin:3px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧱 Kai's Land: Minus Playground</h1>
+
+  <!-- Voice bar -->
+  <div class="voice-bar">
+    <div class="mic-dot" id="micDot"></div>
+    <div style="flex:1;min-width:0;">
+      <div class="voice-text"  id="voiceStatus">Tap 🎤 to turn on voice</div>
+      <div class="voice-heard" id="voiceHeard"></div>
+    </div>
+    <button class="mic-toggle" id="micToggle">🎤</button>
+  </div>
+  <div class="mic-error" id="micError">
+    <b>🎤 Mic only works on the website, not local files.</b><br>
+    ✅ Upload to <b>https://sjkang7982.github.io</b> and open in Chrome → mic will work!<br>
+    For now, use the <b>text command box</b> below — it works exactly the same way.
+  </div>
+  <div class="text-cmd-row">
+    <input class="text-cmd-input" id="textCmd" type="text"
+      placeholder='Say or type: "nine", "give", "give three", "next", "again", "show"…'/>
+    <button class="text-cmd-btn" id="textCmdBtn">→</button>
+  </div>
+  <div class="hint-card" id="hintCard">
+    <b>🗣️ Voice / text commands:</b><br>
+    <b>"nine"</b> (3–12) → set starting blocks<br>
+    <b>"give"</b> / <b>"minus"</b> → give away one block (current step)<br>
+    <b>"give three"</b> → give away 3 at once<br>
+    <b>"next"</b> → move to Step 2<br>
+    <b>"again"</b> → start over<br>
+    <b>"show"</b> / <b>"hide"</b> → open/close relation panel
+  </div>
+  <button class="hint-toggle" id="hintToggle">Show voice commands ▾</button>
+
+  <!-- Stage indicator -->
+  <div class="stage-bar">
+    <div class="stage-pill active1" id="pill1">Step 1</div>
+    <div class="stage-arrow">→</div>
+    <div class="stage-pill" id="pill2" style="cursor:pointer;" title="Click to go to Step 2">Step 2</div>
+  </div>
+
+  <!-- STEP 1: starting blocks picker -->
+  <div class="section-label">How many blocks do you have? <span class="tag">🎤 say a number</span></div>
+  <div class="picker-row" id="startPicker"></div>
+
+  <!-- Step 1 give-away picker (appears after choosing total) -->
+  <div class="step2-section" id="step1GiveSection">
+    <div class="section-label" style="color:#1040A0;">
+      Step 1 — How many to give away?
+      <span class="tag" style="background:#1040A0;">🎤 say a number</span>
+    </div>
+    <div class="picker-row" id="step1Picker"></div>
+  </div>
+
+  <!-- Block display -->
+  <div class="blocks-section">
+    <div class="blocks-label" id="blocksLabel">Your blocks</div>
+    <div class="legend" id="legend" style="display:none;">
+      <div class="legend-item"><div class="legend-dot l-kept"></div> Kept</div>
+      <div class="legend-item"><div class="legend-dot l-gone1"></div> Step 1 given</div>
+      <div class="legend-item"><div class="legend-dot l-gone2"></div> Step 2 given</div>
+    </div>
+    <div class="blocks-row" id="blocksRow"></div>
+  </div>
+
+  <!-- Live equation -->
+  <div class="eq-section">
+    <div class="eq-text" id="eqText"></div>
+  </div>
+
+  <!-- Step 1 action buttons -->
+  <div class="btn-row">
+    <button class="btn-s1" id="giveBtn1" disabled>
+      Give away one block 🧱<br>
+      <small style="font-weight:400;opacity:.8;">say "give"</small>
+    </button>
+    <button class="btn-secondary" id="resetBtn">
+      Start over 🔄<br>
+      <small style="font-weight:400;opacity:.8;">say "again"</small>
+    </button>
+  </div>
+
+  <!-- Step 2 section (shown after step 1 complete) -->
+  <div class="step2-section" id="step2Section">
+    <hr class="step2-divider"/>
+    <div class="section-label" style="color:#E53935;">
+      Step 2 — How many more to give away?
+      <span class="tag" style="background:#E53935;">🎤 say a number</span>
+    </div>
+    <div class="picker-row" id="step2Picker"></div>
+    <div class="btn-row">
+      <button class="btn-s2" id="giveBtn2" disabled>
+        Give away one more 🧱<br>
+        <small style="font-weight:400;opacity:.8;">say "give"</small>
+      </button>
+    </div>
+  </div>
+
+  <div id="message"></div>
+
+  <!-- Relation panel toggle -->
+  <div class="btn-row" style="margin-top:18px;">
+    <button class="btn-relation" id="relBtn">
+      ➕ Addition &amp; Count Back<br>
+      <small style="font-weight:400;opacity:.8;">say "show" / "hide"</small>
+    </button>
+  </div>
+  <div class="relation-panel" id="relPanel">
+    <div class="relation-title" id="relTitle"></div>
+    <div class="relation-grid">
+      <div class="rel-box">
+        <div class="rel-box-title">➕ Addition (reverse)</div>
+        <div id="addSteps"></div>
+      </div>
+      <div class="rel-box">
+        <div class="rel-box-title">🔢 Count Back</div>
+        <div id="countSteps"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ══ State ══
+  let TOTAL=9, given1=0, given2=0;
+  let step=1;          // 1 or 2
+  let step2Target=0;   // how many to give in step 2 (0=not chosen yet)
+  let step1Target=0;   // how many to give in step 1 (0=not chosen yet)
+  let relOpen=false, voiceOn=false, animating=false;
+
+  const $=id=>document.getElementById(id);
+  const micDot=$('micDot'),voiceStatus=$('voiceStatus'),voiceHeard=$('voiceHeard'),micToggle=$('micToggle');
+  const micError=$('micError'),textCmd=$('textCmd'),textCmdBtn=$('textCmdBtn');
+  const hintCard=$('hintCard'),hintToggle=$('hintToggle');
+  const startPicker=$('startPicker'),blocksRow=$('blocksRow'),blocksLabel=$('blocksLabel');
+  const eqText=$('eqText'),messageEl=$('message');
+  const giveBtn1=$('giveBtn1'),giveBtn2=$('giveBtn2'),resetBtn=$('resetBtn');
+  const step2Section=$('step2Section'),step2Picker=$('step2Picker');
+  const step1GiveSection=$('step1GiveSection'),step1Picker=$('step1Picker');
+  const relBtn=$('relBtn'),relPanel=$('relPanel'),relTitle=$('relTitle');
+  const addSteps=$('addSteps'),countSteps=$('countSteps');
+  const pill1=$('pill1'),pill2=$('pill2'),legend=$('legend');
+
+  const NB=['','nb1','nb2','nb3','nb4','nb5','nb6','nb7','nb8','nb9','nb10','nb11','nb12'];
+
+  // ══ Build start picker 3-12 ══
+  for(let i=3;i<=12;i++){
+    const d=document.createElement('div');
+    d.className='pick'; d.textContent=i; d.dataset.v=i;
+    d.addEventListener('click',()=>setTotal(i));
+    startPicker.appendChild(d);
+  }
+
+  // ══ Build blocks ══
+  function buildBlocks(){
+    blocksRow.innerHTML='';
+    for(let i=1;i<=TOTAL;i++){
+      const wrap=document.createElement('div');
+      wrap.className='block kept'; wrap.id='blk'+i;
+      const body=document.createElement('div');
+      body.className='block-body '+(NB[i]||'nb12');
+      body.textContent=i;
+      const num=document.createElement('div');
+      num.className='block-num'; num.textContent='#'+i;
+      wrap.appendChild(body); wrap.appendChild(num);
+      blocksRow.appendChild(wrap);
+    }
+  }
+
+  function updateBlocks(){
+    for(let i=1;i<=TOTAL;i++){
+      const blk=$('blk'+i);
+      if(!blk) continue;
+      const remaining=TOTAL-given1-given2;
+      if(i<=remaining){
+        blk.className='block kept';
+        blk.querySelector('.block-body').className='block-body '+(NB[i]||'nb12');
+      } else if(i<=remaining+given2){
+        blk.className='block gone2';
+      } else {
+        blk.className='block gone1';
+      }
+    }
+  }
+
+  function renderEq(){
+    const r1=TOTAL-given1;
+    const r2=r1-given2;
+    let html='<span>'+TOTAL+'</span>';
+    if(given1>0){
+      html+=' − <span class="eq-s1">'+given1+'</span>';
+      html+=' = <span>'+(given2>0?'<span>'+r1+'</span>':
+        '<span class="eq-res">'+r1+'</span>')+'</span>';
+    } else {
+      html+=' − <span style="color:#E53935;">?</span>';
+    }
+    if(given2>0){
+      html+='<span class="eq-arrow"> → </span>';
+      html+='<span>'+r1+'</span>';
+      html+=' − <span class="eq-s2">'+given2+'</span>';
+      html+=' = <span class="eq-res">'+r2+'</span>';
+    } else if(step===2){
+      html+='<span class="eq-arrow"> → </span>';
+      html+='<span>'+r1+'</span>';
+      html+=' − <span style="color:#1040A0;">?</span>';
+    }
+    eqText.innerHTML=html;
+  }
+
+  function renderMessage(){
+    const r1=TOTAL-given1, r2=r1-given2;
+    if(step===1){
+      if(step1Target===0){
+        messageEl.textContent='Choose how many to give away in Step 1!';
+        giveBtn1.disabled=true;
+      } else if(given1===0){
+        messageEl.textContent='Step 1: give away '+step1Target+' blocks!';
+        giveBtn1.disabled=false;
+      } else if(given1<step1Target){
+        messageEl.textContent='Step 1: '+given1+' given, '+(step1Target-given1)+' more to go…';
+        giveBtn1.disabled=false;
+      } else if(r1===0){
+        messageEl.textContent='All given away! Click "Step 2" or say "next".';
+        giveBtn1.disabled=true;
+      } else {
+        messageEl.textContent=TOTAL+' − '+given1+' = '+r1+' ✅  Now go to Step 2!';
+        giveBtn1.disabled=true;
+      }
+    } else {
+      if(step2Target===0){
+        messageEl.textContent='Choose how many to give away in Step 2!';
+      } else if(given2===0){
+        messageEl.textContent='Step 2: give away '+step2Target+' more blocks!';
+      } else if(given2<step2Target){
+        messageEl.textContent='Step 2: '+given2+' given, '+(step2Target-given2)+' more to go…';
+      } else {
+        messageEl.textContent='🎉 '+TOTAL+' − '+given1+' − '+given2+' = '+r2+'!';
+        giveBtn2.disabled=true;
+        if(relOpen) renderRelation();
+      }
+    }
+    blocksLabel.textContent='Your blocks ('+Math.max(0,TOTAL-given1-given2)+' left)';
+    startPicker.querySelectorAll('.pick').forEach(p=>
+      p.classList.toggle('active',parseInt(p.dataset.v)===TOTAL));
+    renderEq();
+  }
+
+  function render(){ updateBlocks(); renderMessage(); }
+
+  // ══ Step 1 give-away picker ══
+  function buildStep1Picker(){
+    step1Picker.innerHTML='';
+    for(let i=1;i<TOTAL;i++){
+      const d=document.createElement('div');
+      d.className='pick'; d.textContent=i; d.dataset.v=i;
+      d.addEventListener('click',()=>chooseStep1(i));
+      step1Picker.appendChild(d);
+    }
+    step1GiveSection.classList.add('visible');
+  }
+
+  function chooseStep1(n){
+    step1Target=n;
+    given1=0;
+    giveBtn1.disabled=false;
+    step1Picker.querySelectorAll('.pick').forEach(p=>
+      p.classList.toggle('active',parseInt(p.dataset.v)===n));
+    render();
+  }
+
+  // ══ Step 2 picker ══
+  function buildStep2Picker(){
+    step2Picker.innerHTML='';
+    const r1=TOTAL-given1;
+    for(let i=1;i<r1;i++){
+      const d=document.createElement('div');
+      d.className='pick'; d.textContent=i; d.dataset.v=i;
+      d.addEventListener('click',()=>chooseStep2(i));
+      step2Picker.appendChild(d);
+    }
+  }
+
+  function chooseStep2(n){
+    step2Target=n;
+    given2=0;
+    giveBtn2.disabled=false;
+    step2Picker.querySelectorAll('.pick').forEach(p=>
+      p.classList.toggle('active2',parseInt(p.dataset.v)===n));
+    render();
+  }
+
+  // ══ Enter step 2 ══
+  function goStep2(){
+    if(step!==1) return;
+    const r1=TOTAL-given1;
+    if(r1<=0){ messageEl.textContent='No blocks left for Step 2!'; return; }
+    step=2;
+    pill1.className='stage-pill done';
+    pill2.className='stage-pill active2';
+    step2Section.classList.add('visible');
+    legend.style.display='flex';
+    giveBtn1.disabled=true;
+    buildStep2Picker();
+    render();
+  }
+
+  // ══ Give one (mark with X) ══
+  function giveOne(whichStep, count=1){
+    if(animating) return;
+    const r1=TOTAL-given1, r2=r1-given2;
+    const remaining = whichStep===1 ? r1 : r2;
+    const maxGive   = whichStep===2 && step2Target>0 ? step2Target-given2 : remaining;
+    const toRemove  = Math.min(count, maxGive, remaining);
+    if(toRemove<=0) return;
+    animating=true;
+    if(whichStep===1) giveBtn1.disabled=true;
+    else              giveBtn2.disabled=true;
+
+    let removed=0;
+    function markNext(){
+      if(removed>=toRemove){
+        animating=false;
+        // re-enable button if more to give
+        if(whichStep===2){
+          const stillLeft = (TOTAL-given1-given2);
+          const stillNeeded = step2Target - given2;
+          giveBtn2.disabled = (stillLeft<=0 || stillNeeded<=0);
+        } else {
+          giveBtn1.disabled = (TOTAL-given1<=0);
+        }
+        render();
+        return;
+      }
+      if(whichStep===1) given1++; else given2++;
+      removed++;
+      // find the rightmost kept block
+      for(let i=TOTAL;i>=1;i--){
+        const blk=$('blk'+i);
+        if(blk && blk.classList.contains('kept')){
+          blk.classList.add('marking');
+          setTimeout(()=>{
+            blk.classList.remove('marking','kept');
+            blk.classList.add(whichStep===1?'gone1':'gone2');
+            renderEq();
+            renderMessage();
+            setTimeout(markNext,180);
+          },350);
+          return;
+        }
+      }
+      setTimeout(markNext,100);
+    }
+    markNext();
+  }
+
+  // ══ Reset ══
+  function resetGame(){
+    given1=0; given2=0; step=1; step2Target=0; step1Target=0; animating=false;
+    giveBtn1.disabled=true; giveBtn2.disabled=true;
+    pill1.className='stage-pill active1';
+    pill2.className='stage-pill';
+    step2Section.classList.remove('visible');
+    step1GiveSection.classList.remove('visible');
+    legend.style.display='none';
+    buildBlocks();
+    render();
+  }
+
+  function setTotal(n){
+    TOTAL=Math.max(3,Math.min(12,n));
+    step1Target=0;
+    resetGame();
+    buildStep1Picker();
+    flashPick(startPicker,n);
+  }
+
+  function flashPick(container,v){
+    container.querySelectorAll('.pick').forEach(p=>{
+      if(parseInt(p.dataset.v)===v){ p.classList.add('flash'); setTimeout(()=>p.classList.remove('flash'),700); }
+    });
+  }
+
+  // ══ Relation panel ══
+  function renderRelation(){
+    const r1=TOTAL-given1, r2=r1-given2;
+    const title = given2>0
+      ? TOTAL+' − '+given1+' − '+given2+' = '+r2
+      : TOTAL+' − '+given1+' = '+r1;
+    relTitle.textContent=title;
+
+    // Addition reverse
+    let add='';
+    if(given2>0){
+      add='<div class="rel-row add-step">'+r2+' + '+given2+' = '+r1+'</div>'+
+          '<div class="rel-arrow">+</div>'+
+          '<div class="rel-row add-step">'+r1+' + '+given1+' = '+TOTAL+'</div>'+
+          '<div class="rel-row result-row" style="margin-top:8px;">'+r2+' + '+given2+' + '+given1+' = '+TOTAL+'</div>';
+    } else {
+      add='<div class="rel-row add-step">'+r1+' + '+given1+' = '+TOTAL+'</div>'+
+          '<div class="rel-arrow">↕</div>'+
+          '<div class="rel-row add-step">'+given1+' + '+r1+' = '+TOTAL+'</div>';
+    }
+    addSteps.innerHTML=add;
+
+    // Count back from TOTAL
+    const totalGiven=given1+given2;
+    let cb=''; const steps=Math.min(totalGiven,8);
+    for(let i=0;i<steps;i++){
+      const from=TOTAL-i, to=TOTAL-i-1;
+      cb+='<div class="rel-row count-step">'+from+' → '+to+'</div>';
+      if(i<steps-1) cb+='<div class="rel-arrow">↓</div>';
+    }
+    if(totalGiven>8) cb+='<div class="rel-arrow">…('+( totalGiven-8)+' more)</div>';
+    const finalR=given2>0?r2:r1;
+    cb+='<div class="rel-row result-row" style="margin-top:6px;">= '+finalR+' ✅</div>';
+    countSteps.innerHTML=cb;
+  }
+
+  function toggleRelation(){
+    relOpen=!relOpen;
+    relPanel.classList.toggle('open',relOpen);
+    relBtn.innerHTML=(relOpen?'➕ Hide Addition &amp; Count Back':'➕ Addition &amp; Count Back')+
+      '<br><small style="font-weight:400;opacity:.8;">say "'+(relOpen?'hide':'show')+'"</small>';
+    if(relOpen) renderRelation();
+  }
+
+  // ══ Number words ══
+  const NW={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,won:1,to:2,too:2,for:4,fore:4,ate:8};
+  function parseNum(text){
+    const t=text.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+    const dm=t.match(/\b(1[0-2]|[1-9])\b/); if(dm) return parseInt(dm[1],10);
+    const keys=Object.keys(NW).sort((a,b)=>b.length-a.length);
+    for(const k of keys) if(new RegExp('\\b'+k+'\\b').test(t)) return NW[k];
+    return null;
+  }
+
+  function flashEl(el){ if(!el) return; el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),700); }
+
+  // ══ Command dispatcher ══
+  function dispatch(text){
+    const t=text.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+    if(/\b(again|reset|restart)\b/.test(t)){ flashEl(resetBtn); resetGame(); return true; }
+    if(/\bshow\b/.test(t)&&!relOpen){ flashEl(relBtn); toggleRelation(); return true; }
+    if(/\bhide\b/.test(t)&&relOpen) { flashEl(relBtn); toggleRelation(); return true; }
+    if(/\bnext\b/.test(t)){ goStep2(); return true; }
+    if(/\b(give|minus|take|remove)\b/.test(t)){
+      const n=parseNum(t.replace(/give|minus|take|remove/g,'').trim())||1;
+      if(step===1){ flashEl(giveBtn1); giveOne(1,n); }
+      else        { flashEl(giveBtn2); giveOne(2,n); }
+      return true;
+    }
+    const n=parseNum(t);
+    if(n!==null){
+      if(n>=3 && n<=12 && step===1 && given1===0){ setTotal(n); return true; }
+      if(step===1 && n>=1 && n<TOTAL){ chooseStep1(n); return true; }
+      if(step===2 && n>=1 && n<TOTAL-given1){ chooseStep2(n); return true; }
+    }
+    return false;
+  }
+
+  // ══ Text command ══
+  function runTextCmd(){
+    const val=textCmd.value.trim(); if(!val) return;
+    const ok=dispatch(val);
+    voiceHeard.textContent='"'+val+'"'+(ok?' ✅':' ❓');
+    voiceStatus.textContent='Typed:';
+    textCmd.value='';
+    setTimeout(()=>{ voiceStatus.textContent=voiceOn?'Listening…':'Tap 🎤 to turn on voice'; voiceHeard.textContent=''; },1800);
+  }
+  textCmdBtn.addEventListener('click',runTextCmd);
+  textCmd.addEventListener('keydown',e=>{ if(e.key==='Enter') runTextCmd(); });
+
+  hintToggle.addEventListener('click',()=>{
+    const open=hintCard.style.display==='block';
+    hintCard.style.display=open?'none':'block';
+    hintToggle.textContent=open?'Show voice commands ▾':'Hide voice commands ▴';
+  });
+
+  // ══ Speech recognition ══
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  let rec=null,recRunning=false;
+  function startRec(){
+    if(!SR||!voiceOn||recRunning) return;
+    rec=new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=3;
+    rec.onstart=()=>{ recRunning=true; micError.style.display='none'; };
+    rec.onresult=e=>{
+      const tx=e.results[e.results.length-1][0].transcript;
+      const ok=dispatch(tx);
+      micDot.classList.remove('on'); micDot.classList.add('heard');
+      voiceHeard.textContent='"'+tx+'"'+(ok?' ✅':' ❓');
+      voiceStatus.textContent='Heard:';
+      setTimeout(()=>{ micDot.classList.remove('heard'); if(voiceOn) micDot.classList.add('on'); voiceStatus.textContent='Listening…'; voiceHeard.textContent=''; },1800);
+    };
+    rec.onerror=e=>{
+      recRunning=false;
+      if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+        micError.style.display='block';
+        voiceStatus.textContent='🚫 Mic blocked';
+        voiceOn=false; micDot.classList.remove('on');
+      }
+    };
+    rec.onend=()=>{ recRunning=false; if(voiceOn) setTimeout(startRec,200); };
+    try{ rec.start(); }catch(e){ recRunning=false; }
+  }
+
+  micToggle.addEventListener('click',()=>{
+    if(!SR){ voiceStatus.textContent='⚠️ Use Chrome.'; return; }
+    if(location.protocol==='file:'){
+      micError.style.display='block';
+      voiceStatus.textContent='🚫 Local file — mic unavailable';
+      return;
+    }
+    voiceOn=!voiceOn;
+    micDot.classList.toggle('on',voiceOn);
+    voiceStatus.textContent=voiceOn?'Listening…':'Tap 🎤 to turn on voice';
+    if(voiceOn) startRec();
+    else{ if(rec)try{rec.abort();}catch(e){} recRunning=false; voiceHeard.textContent=''; }
+  });
+
+  giveBtn1.addEventListener('click',()=>giveOne(1,1));
+  giveBtn2.addEventListener('click',()=>giveOne(2,1));
+  resetBtn.addEventListener('click',resetGame);
+  relBtn.addEventListener('click',toggleRelation);
+
+  // ══ Step 2 pill click ══
+  pill2.addEventListener('click', () => {
+    if(step===1) goStep2();
+  });
+
+  // ══ Init ══
+  buildBlocks();
+  setTotal(9);
+</script>
+</body>
+</html>
