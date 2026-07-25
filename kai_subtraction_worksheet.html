@@ -145,7 +145,7 @@ body{font-family:-apple-system,"Noto Sans KR",sans-serif;background:#FFFBF5;colo
   </div>
   <div class="hint-card" id="hintCard">
     <b>Voice / text commands:</b><br>
-    "nine" (3–12) → start count &nbsp;·&nbsp; "three" → Step 1 minus &nbsp;·&nbsp; "two" → Step 2 minus<br>
+    "start nine" → set apples count &nbsp;·&nbsp; "three" → Step 1 minus &nbsp;·&nbsp; "two" → Step 2 minus<br>
     "give" → move one apple &nbsp;·&nbsp; "check" → submit answer &nbsp;·&nbsp; "next" → go to Step 2 &nbsp;·&nbsp; "again" → reset
   </div>
   <button class="hint-toggle" id="hintToggle">Show voice commands ▾</button>
@@ -478,11 +478,19 @@ function dispatch(text){
     else checkAns('ansInput2','ansFeedback2',N-S1-S2,2);
     return true;
   }
+  // "start nine" or "start 9" → explicitly set start count
+  if(/\bstart\b/.test(t)){
+    const ns=parseNum(t.replace(/start/g,'').trim());
+    if(ns!==null && ns>=3 && ns<=12){ N=ns; reset(true); return true; }
+  }
   const n=parseNum(t);
   if(n!==null){
-    if(n>=3&&n<=12&&!S1){N=n;reset(true);return true;}
-    if(step===1&&n>=1&&n<N){setS1(n);return true;}
-    if(step===2&&n>=1&&n<N-S1){setS2(n);return true;}
+    // Step 2 active → route to step2
+    if(step===2 && n>=1 && n<N-S1){ setS2(n); return true; }
+    // Step 1 active, N already chosen → route to step1
+    if(step===1 && n>=1 && n<N){ setS1(n); return true; }
+    // Nothing chosen yet → set start count
+    if(n>=3 && n<=12 && S1===0 && given1===0){ N=n; reset(true); return true; }
   }
   return false;
 }
