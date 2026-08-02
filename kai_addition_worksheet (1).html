@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kai's Apple Addition</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,"Noto Sans KR",sans-serif;background:#F0FFF4;color:#1A3020;padding:16px;}
+.wrap{max-width:740px;margin:0 auto;}
+.page-title{text-align:center;font-size:22px;font-weight:500;color:#1B5E20;padding:14px 0 3px;}
+.page-sub{text-align:center;font-size:13px;color:#4A7A50;margin-bottom:14px;}
+
+/* Voice bar */
+.voice-row{display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;border:0.5px solid #A8D8B0;padding:8px 12px;margin-bottom:10px;}
+.mic-dot{width:12px;height:12px;border-radius:50%;background:#CCC;flex-shrink:0;}
+.mic-dot.on{background:#4CAF8A;animation:blink 1.2s infinite;}
+.mic-dot.heard{background:#66BB6A;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+.voice-status{font-size:13px;color:#4A7A50;flex:1;}
+.voice-heard{font-size:13px;font-weight:500;color:#1B5E20;}
+.mic-toggle{font-size:18px;background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:6px;}
+.mic-toggle:hover{background:#E8F5E9;}
+.mic-error{background:#F0FFF0;border:0.5px solid #A8D8B0;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#2E7D32;display:none;}
+.text-cmd-row{display:flex;gap:8px;margin-bottom:12px;}
+.text-cmd-input{flex:1;padding:9px 12px;border-radius:8px;border:0.5px solid #A8D8B0;font-size:14px;font-family:inherit;background:#F0FFF4;}
+.text-cmd-btn{padding:9px 14px;border-radius:8px;border:none;background:#1B5E20;color:#fff;font-size:14px;font-weight:500;cursor:pointer;}
+.hint-card{background:#E8F5E9;border:0.5px solid #A5D6A7;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#2E7D32;line-height:1.8;display:none;}
+.hint-toggle{font-size:12px;background:none;border:none;cursor:pointer;color:#4A7A50;text-decoration:underline;font-family:inherit;display:block;text-align:center;margin-bottom:12px;}
+
+/* Step pills */
+.step-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.step-pill{padding:5px 18px;border-radius:20px;font-size:13px;font-weight:500;border:0.5px solid #A8D8B0;color:#4A7A50;background:#fff;cursor:pointer;}
+.step-pill.s1-active{background:#E8F5E9;color:#1B5E20;border-color:#66BB6A;}
+.step-pill.s2-active{background:#E3F2FD;color:#0D47A1;border-color:#64B5F6;}
+.step-pill.done{background:#F1F8E9;color:#33691E;border-color:#AED581;}
+
+/* Setup zone */
+.setup-zone{background:#F9FFF9;border-radius:16px;border:0.5px solid #C8E6C9;padding:14px;margin-bottom:0;}
+.zone-divider{display:flex;align-items:center;gap:10px;margin:14px 0;}
+.zone-divider-line{flex:1;height:1.5px;background:linear-gradient(90deg,transparent,#66BB6A,transparent);}
+.zone-divider-label{font-size:11px;font-weight:700;letter-spacing:.08em;color:#2E7D32;background:#F0FFF4;padding:3px 10px;border-radius:20px;border:0.5px solid #A5D6A7;white-space:nowrap;}
+
+/* Solve zone */
+.solve-zone{background:#fff;border-radius:16px;border:1.5px solid #66BB6A;padding:14px;box-shadow:0 4px 16px rgba(30,130,60,.07);}
+
+/* Pickers */
+.picker-section{background:#fff;border-radius:12px;border:0.5px solid #C8E6C9;padding:12px 14px;margin-bottom:10px;}
+.picker-label{font-size:13px;font-weight:500;color:#4A7A50;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.vtag{font-size:11px;background:#1B5E20;color:#fff;border-radius:6px;padding:1px 6px;}
+.vtag2{font-size:11px;background:#0D47A1;color:#fff;border-radius:6px;padding:1px 6px;}
+.picks{display:grid;gap:4px;}
+.pick{padding:6px 2px;border-radius:8px;border:0.5px solid #C8E6C9;background:#F9FFF9;font-size:13px;font-weight:500;cursor:pointer;color:#2E7D32;text-align:center;}
+.pick.active{background:#1B5E20;color:#fff;border-color:#1B5E20;}
+.pick.active2{background:#0D47A1;color:#fff;border-color:#0D47A1;}
+.pick.flash{background:#66BB6A;color:#fff;border-color:#66BB6A;}
+
+/* Two-column layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.col-card{background:#fff;border-radius:12px;border:0.5px solid #C8E6C9;padding:12px 14px;}
+.col-card.s1-card{border-color:#66BB6A;}
+.col-card.s2-card{border-color:#64B5F6;opacity:.5;pointer-events:none;}
+.col-card.s2-card.unlocked{opacity:1;pointer-events:all;}
+
+/* Answer */
+.answer-prompt-label{font-size:13px;color:#4A7A50;margin-bottom:8px;}
+.answer-input-row{display:flex;gap:8px;align-items:center;}
+.answer-input{width:70px;padding:8px 10px;border-radius:8px;border:0.5px solid #C8E6C9;font-size:20px;font-weight:500;text-align:center;font-family:inherit;background:#F9FFF9;}
+.answer-submit{padding:8px 14px;border-radius:8px;border:none;background:#2E7D32;color:#fff;font-size:14px;font-weight:500;cursor:pointer;}
+.answer-mic-btn{padding:8px 10px;border-radius:8px;border:0.5px solid #C8E6C9;background:#fff;font-size:17px;cursor:pointer;}
+.answer-feedback{margin-top:8px;font-size:15px;font-weight:500;min-height:22px;}
+.fb-correct{color:#2E7D32;}
+.fb-wrong{color:#E65100;}
+
+/* Equation bar */
+.eq-bar{text-align:center;font-size:22px;font-weight:500;color:#1A3020;padding:8px 4px;margin-bottom:10px;min-height:40px;}
+.eq-s1{color:#1B5E20;}
+.eq-s2{color:#0D47A1;}
+.eq-ok{color:#E65100;font-weight:700;}
+.eq-gap{display:inline-block;width:22px;}
+
+/* Basket toggle */
+.basket-toggle-btn{display:block;margin:14px auto 0;padding:7px 18px;border-radius:8px;border:0.5px solid #C8E6C9;background:#fff;font-size:13px;color:#1B5E20;cursor:pointer;font-family:inherit;}
+.basket-toggle-btn:hover{background:#E8F5E9;}
+
+/* Basket section */
+.basket-section{background:#fff;border-radius:12px;border:0.5px solid #C8E6C9;padding:14px;margin-top:12px;display:none;}
+.basket-section.visible{display:block;}
+.basket-inner{display:grid;grid-template-columns:2fr 1px 1fr;gap:0;}
+.basket-divider{background:#C8E6C9;}
+.basket-left{padding-right:12px;}
+.basket-right{padding-left:12px;}
+.area-title{font-size:11px;font-weight:500;color:#4A7A50;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
+
+/* Basket inline msg */
+.basket-inline-msg{background:#F1F8E9;border:1.5px solid #A5D6A7;border-radius:9px;padding:8px 12px;font-size:15px;font-weight:700;color:#1B5E20;margin-bottom:8px;min-height:36px;text-align:center;transition:all .3s;}
+.basket-inline-msg.done{background:#E8F5E9;border-color:#66BB6A;color:#1B5E20;}
+.basket-inline-msg.step2{border-color:#64B5F6;background:#E3F2FD;color:#0D47A1;}
+
+/* Basket box */
+.basket-box{border:0.5px solid #C8E6C9;border-radius:10px;padding:10px;background:#F9FFF9;margin-bottom:8px;}
+.basket-box-label{font-size:12px;color:#4A7A50;margin-bottom:6px;font-weight:500;}
+.apples-grid{display:flex;flex-wrap:wrap;gap:3px;min-height:32px;}
+.apple{font-size:20px;transition:all .3s;}
+.apple.s1-new{filter:drop-shadow(0 0 4px #66BB6A);}
+.apple.s2-new{filter:drop-shadow(0 0 4px #64B5F6);}
+
+/* Plates → source plates for addition */
+.plates-row{display:flex;gap:8px;margin-bottom:6px;}
+.plate-card{flex:1;border-radius:9px;padding:9px;text-align:center;}
+.plate-card.p1{border:0.5px solid #A5D6A7;background:#F1F8E9;}
+.plate-card.p2{border:0.5px solid #64B5F6;background:#E3F2FD;}
+.plate-label{font-size:11px;font-weight:500;margin-bottom:5px;}
+.p1 .plate-label{color:#1B5E20;}
+.p2 .plate-label{color:#0D47A1;}
+.plate-apples{font-size:18px;min-height:24px;letter-spacing:2px;}
+.move-btn{width:100%;margin-top:6px;padding:6px 0;border-radius:7px;border:none;font-size:12px;font-weight:500;cursor:pointer;}
+.move-btn.m1{background:#F1F8E9;color:#1B5E20;border:0.5px solid #A5D6A7;}
+.move-btn.m2{background:#E3F2FD;color:#0D47A1;border:0.5px solid #64B5F6;}
+.move-btn:disabled{opacity:.4;cursor:default;}
+
+/* Legend */
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#4A7A50;}
+
+/* Staircase (going UP for addition) */
+.stair-wrap{padding-top:4px;}
+.stair-step{margin-bottom:2px;opacity:0;transition:opacity .45s;}
+.stair-step.show{opacity:1;}
+.stair-num-row{display:flex;align-items:center;gap:6px;}
+.s-num{font-size:24px;font-weight:500;color:#1A3020;min-width:28px;}
+.s-num.s1-result{color:#1B5E20;}
+.s-num.final{color:#E65100;font-size:26px;}
+.stair-op-row{display:flex;align-items:center;gap:6px;padding:1px 0 1px 18px;}
+.s-arrow{font-size:13px;color:#66BB6A;}
+.s-op{font-size:14px;font-weight:500;}
+.s-op.op1{color:#1B5E20;}
+.s-op.op2{color:#0D47A1;}
+
+/* Msg */
+.msg-bar{display:none;}
+.reset-btn{padding:7px 20px;border-radius:8px;border:0.5px solid #C8E6C9;background:#fff;font-size:13px;color:#4A7A50;cursor:pointer;font-family:inherit;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-title">🍎 Kai's Apple Addition</div>
+  <div class="page-sub">Think of your answer first — then check with the apples!</div>
+
+  <!-- Voice bar -->
+  <div class="voice-row">
+    <div class="mic-dot" id="micDot"></div>
+    <div style="flex:1">
+      <div class="voice-status" id="voiceStatus">Tap 🎤 to use voice</div>
+      <div class="voice-heard" id="voiceHeard"></div>
+    </div>
+    <button class="mic-toggle" id="micBtn">🎤</button>
+  </div>
+  <div class="mic-error" id="micError">Voice needs <b>https://</b> — open via GitHub Pages in Chrome. Use the text box below.</div>
+  <div class="text-cmd-row">
+    <input class="text-cmd-input" id="textCmd" type="text" placeholder='"start three", "four", "two", "add", "check", "next", "again"…'/>
+    <button class="text-cmd-btn" id="textCmdBtn">Go</button>
+  </div>
+  <div class="hint-card" id="hintCard">
+    <b>Voice / text commands:</b><br>
+    "start three" (1–9) → set Step 1 number &nbsp;·&nbsp; "four" → set addend &nbsp;·&nbsp; "two" → set Step 2 addend<br>
+    "add" → move one apple to basket &nbsp;·&nbsp; "check" → submit answer &nbsp;·&nbsp; "next" → go to Step 2 &nbsp;·&nbsp; "again" → reset
+  </div>
+  <button class="hint-toggle" id="hintToggle">Show voice commands ▾</button>
+
+  <!-- ══ SETUP ZONE ══ -->
+  <div class="setup-zone">
+    <div class="step-row">
+      <div class="step-pill s1-active" id="pill1">Step 1</div>
+      <div style="color:#66BB6A;font-size:14px;">→</div>
+      <div class="step-pill" id="pill2" style="cursor:pointer;">Step 2</div>
+      <div style="margin-left:auto;">
+        <button class="reset-btn" id="resetBtn">Start over</button>
+      </div>
+    </div>
+
+    <!-- Start number -->
+    <div class="picker-section" style="margin-bottom:10px;">
+      <div class="picker-label">Start with how many apples? <span class="vtag">🎤 say "start N"</span></div>
+      <div class="picks" id="startPicker"></div>
+    </div>
+
+    <!-- Step 1 & 2 addend pickers -->
+    <div class="two-col" style="margin-bottom:0;">
+      <div class="col-card s1-card">
+        <div class="picker-label" style="color:#1B5E20;">Step 1 — add how many? <span class="vtag">🎤</span></div>
+        <div class="picks" id="s1Picker"></div>
+      </div>
+      <div class="col-card s2-card" id="s2PickerCard">
+        <div class="picker-label" style="color:#0D47A1;">Step 2 — add how many more? <span class="vtag2">🎤</span></div>
+        <div class="picks" id="s2Picker"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zone divider -->
+  <div class="zone-divider">
+    <div class="zone-divider-line"></div>
+    <div class="zone-divider-label">✏️ Solve</div>
+    <div class="zone-divider-line"></div>
+  </div>
+
+  <!-- ══ SOLVE ZONE ══ -->
+  <div class="solve-zone">
+    <div class="eq-bar" id="eqBar"></div>
+    <div class="two-col" id="answerCols" style="margin-bottom:0;">
+      <div class="col-card s1-card" id="ansBox1" style="display:none;">
+        <div class="answer-prompt-label" id="ansPrompt1"></div>
+        <div class="answer-input-row">
+          <input class="answer-input" id="ansInput1" type="number" min="0" max="20" placeholder="?"/>
+          <button class="answer-submit" id="ansSubmit1">Check</button>
+          <button class="answer-mic-btn" id="ansMic1">🎤</button>
+        </div>
+        <div class="answer-feedback" id="ansFeedback1"></div>
+      </div>
+      <div class="col-card s2-card" id="ansBox2" style="display:none;">
+        <div class="answer-prompt-label" id="ansPrompt2"></div>
+        <div class="answer-input-row">
+          <input class="answer-input" id="ansInput2" type="number" min="0" max="20" placeholder="?"/>
+          <button class="answer-submit" id="ansSubmit2" style="background:#0D47A1;">Check</button>
+          <button class="answer-mic-btn" id="ansMic2">🎤</button>
+        </div>
+        <div class="answer-feedback" id="ansFeedback2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Basket toggle -->
+  <button class="basket-toggle-btn" id="basketToggleBtn">🍎🪜 Show basket &amp; staircase ▾</button>
+
+  <!-- Basket + Staircase -->
+  <div class="basket-section" id="basketSection">
+    <div class="basket-inner">
+      <div class="basket-left">
+        <div class="area-title">Apple basket</div>
+        <div class="basket-box">
+          <div class="basket-box-label" id="basketLabel">Apples in basket</div>
+          <div class="apples-grid" id="applesGrid"></div>
+        </div>
+        <div class="basket-inline-msg" id="basketMsg"></div>
+        <div class="legend" id="legend">
+          <div class="legend-item"><span style="font-size:14px;filter:drop-shadow(0 0 3px #66BB6A)">🍎</span> Step 1 added</div>
+          <div class="legend-item"><span style="font-size:14px;filter:drop-shadow(0 0 3px #64B5F6)">🍎</span> Step 2 added</div>
+        </div>
+        <div class="plates-row">
+          <div class="plate-card p1">
+            <div class="plate-label">Plate 1</div>
+            <div class="plate-apples" id="plate1Apples"></div>
+            <button class="move-btn m1" id="addBtn1" disabled>Add one apple 🍎</button>
+          </div>
+          <div class="plate-card p2">
+            <div class="plate-label">Plate 2</div>
+            <div class="plate-apples" id="plate2Apples"></div>
+            <button class="move-btn m2" id="addBtn2" disabled>Add one apple 🍎</button>
+          </div>
+        </div>
+      </div>
+      <div class="basket-divider"></div>
+      <div class="basket-right">
+        <div class="area-title">Staircase</div>
+        <div class="stair-wrap" id="stairWrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="msg-bar" id="msgBar"></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+// N = starting apples, A1 = step1 addend, A2 = step2 addend
+let N=3, A1=0, A2=0, step=1, added1=0, added2=0;
+let ans1Checked=false, ans2Checked=false;
+let voiceOn=false, recRunning=false, rec=null;
+
+const NW={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,won:1,to:2,too:2,for:4,fore:4,ate:8};
+function parseNum(t){
+  const cl=t.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+  const dm=cl.match(/\b(1[0-9]|[1-9])\b/);if(dm)return parseInt(dm[1]);
+  for(const k of Object.keys(NW).sort((a,b)=>b.length-a.length))
+    if(new RegExp('\\b'+k+'\\b').test(cl))return NW[k];
+  return null;
+}
+function flashEl(el){if(!el)return;el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),700);}
+
+function setPickerGrid(el){const n=el.querySelectorAll('.pick').length;if(n>0)el.style.gridTemplateColumns='repeat('+n+',1fr)';}
+function syncStepPickerGrids(){
+  const s1=$('s1Picker'),s2=$('s2Picker');
+  const n1=s1?s1.querySelectorAll('.pick').length:0;
+  const n2=s2?s2.querySelectorAll('.pick').length:0;
+  const cols=Math.max(n1,n2,1);
+  if(s1)s1.style.gridTemplateColumns='repeat('+cols+',1fr)';
+  if(s2)s2.style.gridTemplateColumns='repeat('+cols+',1fr)';
+}
+
+function buildStartPicker(){
+  $('startPicker').innerHTML='';
+  for(let i=1;i<=9;i++){
+    const d=document.createElement('div');
+    d.className='pick'+(N===i?' active':'');d.textContent=i;d.dataset.v=i;
+    d.onclick=()=>{N=i;reset(true);};
+    $('startPicker').appendChild(d);
+  }
+  setPickerGrid($('startPicker'));
+}
+function buildS1Picker(){
+  $('s1Picker').innerHTML='';
+  for(let i=1;i<=9;i++){
+    const d=document.createElement('div');
+    d.className='pick'+(A1===i?' active':'');d.textContent=i;d.dataset.v=i;
+    d.onclick=()=>setA1(i);
+    $('s1Picker').appendChild(d);
+  }
+  syncStepPickerGrids();
+}
+function buildS2Picker(){
+  $('s2Picker').innerHTML='';
+  for(let i=1;i<=9;i++){
+    const d=document.createElement('div');
+    d.className='pick'+(A2===i?' active2':'');d.textContent=i;d.dataset.v=i;
+    d.onclick=()=>setA2(i);
+    $('s2Picker').appendChild(d);
+  }
+  syncStepPickerGrids();
+}
+
+function setA1(v){
+  A1=v;added1=0;ans1Checked=false;
+  $('s1Picker').querySelectorAll('.pick').forEach(p=>p.classList.toggle('active',parseInt(p.dataset.v)===v));
+  $('ansBox1').style.display='block';
+  $('ansPrompt1').textContent=N+' + '+A1+' = ?  Think first, then check!';
+  $('ansInput1').value='';$('ansFeedback1').textContent='';
+  $('addBtn1').disabled=false;
+  render();
+}
+function setA2(v){
+  A2=v;added2=0;ans2Checked=false;
+  $('s2Picker').querySelectorAll('.pick').forEach(p=>p.classList.toggle('active2',parseInt(p.dataset.v)===v));
+  $('ansBox2').style.display='block';
+  $('ansPrompt2').textContent=(N+A1)+' + '+A2+' = ?  Think first!';
+  $('ansInput2').value='';$('ansFeedback2').textContent='';
+  $('addBtn2').disabled=false;
+  render();
+}
+
+function goStep2(){
+  if(step!==1)return;
+  step=2;
+  if(ans1Checked&&added1<A1)added1=A1;
+  $('pill1').className='step-pill done';
+  $('pill2').className='step-pill s2-active';
+  $('s2PickerCard').classList.add('unlocked');
+  $('ansBox2').classList.add('unlocked');
+  buildS2Picker();
+  render();
+}
+
+function renderApples(){
+  const grid=$('applesGrid');grid.innerHTML='';
+  const total=N+added1+added2;
+  for(let i=1;i<=total;i++){
+    const sp=document.createElement('span');sp.className='apple';sp.textContent='🍎';
+    if(i>N+added1)sp.classList.add('s2-new');
+    else if(i>N)sp.classList.add('s1-new');
+    grid.appendChild(sp);
+  }
+  $('basketLabel').textContent='Basket ('+(N+added1+added2)+' apples)';
+  // Plate 1: remaining to add in step1
+  const rem1=Math.max(0,A1-added1);
+  $('plate1Apples').textContent='🍎'.repeat(rem1);
+  // Plate 2: remaining to add in step2
+  const rem2=Math.max(0,A2-added2);
+  $('plate2Apples').textContent='🍎'.repeat(rem2);
+  $('addBtn1').disabled=(added1>=A1||step!==1||!A1);
+  $('addBtn2').disabled=(added2>=A2||step!==2||!A2);
+}
+
+function renderStair(){
+  const wrap=$('stairWrap');wrap.innerHTML='';
+  const r1=N+A1, r2=r1+A2;
+  const s1done=A1>0&&added1>=A1;
+  const s2done=A2>0&&added2>=A2;
+  function addRow(html,show){
+    const d=document.createElement('div');
+    d.className='stair-step';d.innerHTML=html;wrap.appendChild(d);
+    if(show)d.classList.add('show');
+    return d;
+  }
+  // Staircase goes UP: start at bottom, result at top
+  addRow('<div class="stair-num-row"><span class="s-num">'+N+'</span></div>',true);
+  if(A1>0){
+    addRow('<div class="stair-op-row"><span class="s-arrow">↑</span><span class="s-op op1">+ '+A1+'</span></div>',s1done);
+    addRow('<div class="stair-num-row"><span class="s-num s1-result">'+r1+'</span></div>',s1done);
+  }
+  if(A2>0&&step===2){
+    addRow('<div class="stair-op-row"><span class="s-arrow">↑</span><span class="s-op op2">+ '+A2+'</span></div>',s2done);
+    addRow('<div class="stair-num-row"><span class="s-num final">'+r2+'</span></div>',s2done);
+  }
+}
+
+function renderEq(){
+  const r1=N+A1, r2=r1+A2;
+  const s1confirmed=ans1Checked||(A1>0&&added1>=A1);
+  const s2confirmed=ans2Checked||(A2>0&&added2>=A2);
+  let html='';
+  if(!A1){ html=N+' + ?'; }
+  else if(!s1confirmed){ html=N+' <span class="eq-s1">+ '+A1+'</span> = ?'; }
+  else if(step===1){ html=N+' <span class="eq-s1">+ '+A1+'</span> = <span class="eq-ok">'+r1+'</span>'; }
+  else if(!A2){ html=N+' <span class="eq-s1">+ '+A1+'</span> = <span class="eq-ok">'+r1+'</span><span class="eq-gap"></span>→<span class="eq-gap"></span>'+r1+' + ?'; }
+  else if(!s2confirmed){ html=N+' <span class="eq-s1">+ '+A1+'</span> = <span class="eq-ok">'+r1+'</span><span class="eq-gap"></span>→<span class="eq-gap"></span>'+r1+' <span class="eq-s2">+ '+A2+'</span> = ?'; }
+  else{ html=N+' <span class="eq-s1">+ '+A1+'</span> = <span class="eq-ok">'+r1+'</span><span class="eq-gap"></span>→<span class="eq-gap"></span>'+r1+' <span class="eq-s2">+ '+A2+'</span> = <span class="eq-ok">'+r2+'</span> 🎉'; }
+  $('eqBar').innerHTML=html;
+}
+
+function renderMsg(){
+  const r1=N+A1;
+  let msg='',cls='';
+  if(!A1){ msg='Choose how many to add in Step 1!'; cls=''; }
+  else if(step===1){
+    if(added1<A1){ msg='🍎 Move '+A1+' apples to basket  ('+added1+' done)'; cls=''; }
+    else{ msg=N+' + '+A1+' = '+r1+' ✅  Click Step 2!'; cls='done'; }
+  } else {
+    if(!A2){ msg='Choose how many to add in Step 2!'; cls='step2'; }
+    else if(added2<A2){ msg='🍎 Move '+A2+' more apples to basket  ('+added2+' done)'; cls='step2'; }
+    else{ msg='🎉 '+N+' + '+A1+' + '+A2+' = '+(N+A1+A2)+'  Great job!'; cls='done'; }
+  }
+  const bm=$('basketMsg');
+  if(bm){bm.textContent=msg;bm.className='basket-inline-msg'+(cls?' '+cls:'');}
+  $('msgBar').textContent=msg;
+}
+
+function render(){renderApples();renderStair();renderEq();renderMsg();}
+
+function checkAns(inputId,feedbackId,correct,st){
+  const val=parseInt($(inputId).value);
+  if(isNaN(val)){$(feedbackId).innerHTML='<span class="fb-wrong">Type a number first!</span>';return;}
+  if(val===correct){
+    if(st===1)ans1Checked=true; else ans2Checked=true;
+    $(feedbackId).innerHTML='<span class="fb-correct">🎉 ✅ Yes! '+correct+' is right!</span>';
+  } else {
+    $(feedbackId).innerHTML='<span class="fb-wrong">🔄 Try again!</span>';
+  }
+  render();
+}
+$('ansSubmit1').onclick=()=>checkAns('ansInput1','ansFeedback1',N+A1,1);
+$('ansSubmit2').onclick=()=>checkAns('ansInput2','ansFeedback2',N+A1+A2,2);
+
+function listenForAnswer(feedbackId,inputId,correct,st){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){$(feedbackId).textContent='Voice not supported';return;}
+  const r=new SR();r.lang='en-US';r.maxAlternatives=3;
+  r.onresult=e=>{
+    const tx=e.results[0][0].transcript;
+    const n=parseNum(tx);
+    if(n===null){$(feedbackId).innerHTML='<span class="fb-wrong">Heard "'+tx+'" — try again</span>';return;}
+    $(inputId).value=n;
+    if(n===correct){
+      if(st===1)ans1Checked=true; else ans2Checked=true;
+      $(feedbackId).innerHTML='<span class="fb-correct">🎉 ✅ Yes! '+correct+' is right! You said "'+tx+'"</span>';
+    } else {
+      $(feedbackId).innerHTML='<span class="fb-wrong">🔄 Try again!</span>';
+    }
+    render();
+  };
+  r.onerror=()=>{$(feedbackId).innerHTML='<span class="fb-wrong">Mic error — try again</span>';};
+  r.start();
+}
+$('ansMic1').onclick=()=>listenForAnswer('ansFeedback1','ansInput1',N+A1,1);
+$('ansMic2').onclick=()=>listenForAnswer('ansFeedback2','ansInput2',N+A1+A2,2);
+
+$('addBtn1').onclick=()=>{if(added1<A1){added1++;if(added1>=A1)$('addBtn1').disabled=true;render();}};
+$('addBtn2').onclick=()=>{if(added2<A2){added2++;if(added2>=A2)$('addBtn2').disabled=true;render();}};
+$('pill2').onclick=()=>{if(step===1&&A1>0)goStep2();};
+$('resetBtn').onclick=()=>reset(false);
+
+$('basketToggleBtn').onclick=()=>{
+  const bs=$('basketSection');
+  const open=bs.classList.contains('visible');
+  bs.classList.toggle('visible',!open);
+  $('basketToggleBtn').textContent=open?'🍎🪜 Show basket & staircase ▾':'🍎🪜 Hide basket & staircase ▴';
+};
+
+function reset(keepN){
+  if(!keepN)N=3;
+  A1=0;A2=0;added1=0;added2=0;step=1;
+  ans1Checked=false;ans2Checked=false;
+  $('pill1').className='step-pill s1-active';
+  $('pill2').className='step-pill';
+  $('s2PickerCard').classList.remove('unlocked');
+  $('ansBox1').style.display='none';
+  $('ansBox2').style.display='none';
+  $('ansFeedback1').textContent='';$('ansFeedback2').textContent='';
+  $('basketSection').classList.remove('visible');
+  $('basketToggleBtn').textContent='🍎🪜 Show basket & staircase ▾';
+  $('plate1Apples').textContent='';$('plate2Apples').textContent='';
+  buildStartPicker();buildS1Picker();buildS2Picker();render();
+}
+
+function dispatch(text){
+  const t=text.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+  if(/\b(again|reset)\b/.test(t)){reset(false);return true;}
+  if(/\bnext\b/.test(t)){if(step===1&&A1>0)goStep2();return true;}
+  if(/\b(add|move)\b/.test(t)){
+    const cnt=parseNum(t.replace(/add|move/g,'').trim())||1;
+    if(step===1)for(let i=0;i<cnt&&added1<A1;i++){added1++;if(added1>=A1)$('addBtn1').disabled=true;}
+    else for(let i=0;i<cnt&&added2<A2;i++){added2++;if(added2>=A2)$('addBtn2').disabled=true;}
+    render();return true;
+  }
+  if(/\bcheck\b/.test(t)){
+    if(step===1)checkAns('ansInput1','ansFeedback1',N+A1,1);
+    else checkAns('ansInput2','ansFeedback2',N+A1+A2,2);
+    return true;
+  }
+  if(/\bstart\b/.test(t)){
+    const ns=parseNum(t.replace(/start/g,'').trim());
+    if(ns!==null&&ns>=1&&ns<=9){N=ns;reset(true);return true;}
+  }
+  const n=parseNum(t);
+  if(n!==null){
+    if(step===2&&n>=1&&n<=9){setA2(n);return true;}
+    if(step===1&&n>=1&&n<=9){setA1(n);return true;}
+    if(n>=1&&n<=9&&A1===0&&added1===0){N=n;reset(true);return true;}
+  }
+  return false;
+}
+
+function runTextCmd(){
+  const v=$('textCmd').value.trim();if(!v)return;
+  const ok=dispatch(v);
+  $('voiceHeard').textContent='"'+v+'"'+(ok?' ✅':' ❓');
+  $('voiceStatus').textContent='Typed:';
+  $('textCmd').value='';
+  setTimeout(()=>{$('voiceStatus').textContent=voiceOn?'Listening…':'Tap 🎤 to use voice';$('voiceHeard').textContent='';},2000);
+}
+$('textCmdBtn').onclick=runTextCmd;
+$('textCmd').addEventListener('keydown',e=>{if(e.key==='Enter')runTextCmd();});
+
+$('hintToggle').onclick=()=>{
+  const open=$('hintCard').style.display==='block';
+  $('hintCard').style.display=open?'none':'block';
+  $('hintToggle').textContent=open?'Show voice commands ▾':'Hide voice commands ▴';
+};
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function startRec(){
+  if(!SR||!voiceOn||recRunning)return;
+  rec=new SR();rec.lang='en-US';rec.interimResults=false;rec.maxAlternatives=3;
+  rec.onstart=()=>{recRunning=true;$('micError').style.display='none';};
+  rec.onresult=e=>{
+    const tx=e.results[e.results.length-1][0].transcript;
+    const ok=dispatch(tx);
+    $('micDot').classList.remove('on');$('micDot').classList.add('heard');
+    $('voiceHeard').textContent='"'+tx+'"'+(ok?' ✅':' ❓');
+    $('voiceStatus').textContent='Heard:';
+    setTimeout(()=>{$('micDot').classList.remove('heard');if(voiceOn)$('micDot').classList.add('on');$('voiceStatus').textContent='Listening…';$('voiceHeard').textContent='';},2000);
+  };
+  rec.onerror=e=>{
+    recRunning=false;
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+      $('micError').style.display='block';$('voiceStatus').textContent='Mic blocked';voiceOn=false;$('micDot').classList.remove('on');
+    }
+  };
+  rec.onend=()=>{recRunning=false;if(voiceOn)setTimeout(startRec,200);};
+  try{rec.start();}catch(e){recRunning=false;}
+}
+$('micBtn').onclick=()=>{
+  if(!SR){$('voiceStatus').textContent='Not supported — use Chrome';return;}
+  if(location.protocol==='file:'){$('micError').style.display='block';$('voiceStatus').textContent='Local file — mic unavailable';return;}
+  voiceOn=!voiceOn;
+  $('micDot').classList.toggle('on',voiceOn);
+  $('voiceStatus').textContent=voiceOn?'Listening…':'Tap 🎤 to use voice';
+  if(voiceOn)startRec();
+  else{if(rec)try{rec.abort();}catch(e){}recRunning=false;}
+};
+
+reset(false);
+</script>
+</body>
+</html>
